@@ -1,0 +1,34 @@
+name: Feature
+description: A BellLap feature from docs/PLAN.md, to be worked by a Claude agent
+title: "[Fxx] "
+labels: [feature]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: The user-facing outcome.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: A checklist of observable behaviours.
+      value: "- [ ] "
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification evidence required
+      description: Which tier (docs/VERIFICATION.md) proves each criterion, and what evidence the PR must carry.
+    validations:
+      required: true
+  - type: textarea
+    id: deps
+    attributes:
+      label: Dependencies and notes
+  - type: markdown
+    attributes:
+      value: "To launch an agent, comment `@claude implement this issue`, add the `agent:go` label, or start a Claude Code web session in the **belllap** environment with `Implement issue #N. Follow CLAUDE.md.`"
