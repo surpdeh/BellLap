@@ -17,3 +17,4 @@ testing/fixtures/generated/
 *.mov
 # Claude local settings
 .claude/settings.local.json
+.kotlin/
