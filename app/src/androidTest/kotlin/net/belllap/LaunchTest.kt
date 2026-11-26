@@ -1,0 +1,30 @@
+package net.belllap
+
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import net.belllap.ui.TestTags
+import org.junit.Assert.assertTrue
+import org.junit.Rule
+import org.junit.Test
+
+class LaunchTest {
+    @get:Rule
+    val composeRule = createAndroidComposeRule<MainActivity>()
+
+    @Test
+    fun launchesToSetupScreen() {
+        composeRule.onNodeWithTag(TestTags.SETUP_SCREEN).assertIsDisplayed()
+        composeRule.onNodeWithTag(TestTags.STATUS_MODE).assertTextEquals("SETUP")
+        composeRule.waitForIdle()
+        // Hold the screen briefly so the screen recording captures it.
+        Thread.sleep(HOLD_MS)
+        val shot = TestEvidence.screenshot("01-setup-launch")
+        assertTrue("Screenshot missing: $shot", shot.length() > 0)
+    }
+
+    private companion object {
+        const val HOLD_MS = 2_000L
+    }
+}

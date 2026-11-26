@@ -8,11 +8,14 @@ adb logcat -c || true
 adb shell screenrecord --time-limit 180 /sdcard/e2e.mp4 &
 REC_PID=$!
 
-./gradlew connectedDebugAndroidTest
+# Keep the APKs installed afterwards so run-as can pull files/evidence.
+./gradlew connectedDebugAndroidTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true
 STATUS=$?
 
-kill -INT "$REC_PID" 2>/dev/null || true
-sleep 3
+# SIGINT the on-device recorder (not just the adb client) so the MP4 is finalised.
+adb shell pkill -INT screenrecord || true
+wait "$REC_PID" 2>/dev/null || true
+sleep 2
 adb pull /sdcard/e2e.mp4 evidence/e2e.mp4 || true
 adb exec-out screencap -p > evidence/final-screen.png || true
 # Screenshots that tests save to the app's files/evidence directory (see TestEvidence helper, F01)
