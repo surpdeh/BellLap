@@ -172,7 +172,7 @@ Each feature becomes one GitHub issue, `[Fxx] Title`, with acceptance criteria a
 - [x] **F02 Verification skill:** ([#3](https://github.com/surpdeh/belllap/issues/3)) `verify-belllap` covering launch, doctor, drive, evidence and cleanup.
   - Proven end to end, both in the cloud container (JVM tests and Robolectric/Roborazzi screenshots) and in CI (emulator).
   - Includes a feature map ([VERIFICATION.md](VERIFICATION.md)).
-- [ ] **F03 Fixture framework:** ([#4](https://github.com/surpdeh/belllap/issues/4))
+- [x] **F03 Fixture framework:** ([#4](https://github.com/surpdeh/belllap/issues/4))
   - `FrameSource` and `AudioSource` interfaces with file-backed implementations.
   - **Synthetic fixture generators**: a bell-tone WAV with crowd or pink noise, a chequered-flag video, and riders crossing a line. These work with no real footage.
   - A fixture manifest with labels.

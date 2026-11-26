@@ -1,6 +1,6 @@
 # Replay mode
 
-Status: **not implemented yet** (F03 fixtures and F24 replay). `:testing:harness:replay` exists but is a stub that only runs the harness unit tests.
+Status: **RP-1 and RP-2 implemented (F03)**. RP-3 and RP-4 need Replay mode (F24) and are **not implemented yet**. `:testing:harness:replay` replays the synthetic fixtures through baseline detectors; the real detectors replace them later.
 
 Replay runs the whole pipeline (state machine and detectors) on a chosen MP4 and WAV instead of the camera and microphone. It is the main way to verify on the emulator.
 
@@ -20,7 +20,9 @@ Replay runs the whole pipeline (state machine and detectors) on a chosen MP4 and
 Preconditions: Doctor prints `DOCTOR_OK`.
 
 - **Tier 1 (RP-1, RP-2):** `./gradlew :testing:fixtures:test :testing:harness:replay`, then check `metrics.json` against `testing/thresholds.json`.
-- **Today:** `replay` succeeds without producing metrics. Report RP-1..RP-4 as **inconclusive: not implemented**. A green `replay` task is not a pass.
+- **Tier 1 evidence:** `testing/harness/build/reports/` holds `metrics.json`, `contact-sheet.png` (race frames, crossing frames outlined red) and `spectrogram.png` (bell with distractors). Open both PNGs with the Read tool. `replay` exits 1 when a metric breaks `testing/thresholds.json`.
+- **Inspect the fixtures:** `./gradlew :testing:fixtures:generateFixtures` writes WAVs, PNG sequences and `labels.json` to `testing/fixtures/generated/`.
+- **RP-3, RP-4:** report as **inconclusive: not implemented** until F24.
 - **Tier 2 (RP-3, RP-4):** the CI emulator job pulls `events.jsonl` from `files/logs/events.jsonl` in the app sandbox and posts it in the evidence comment. Read the sequence there.
 
 ## Gotchas

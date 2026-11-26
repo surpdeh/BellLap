@@ -36,7 +36,7 @@ step build     lintDebug assembleDebug
 
 # Collect evidence
 mkdir -p "$OUT/reports"
-find . -path ./evidence -prune -o -path '*/build/test-results/testDebugUnitTest/*.xml' -print | while read -r f; do cp "$f" "$OUT/reports/"; done
+find . -path ./evidence -prune -o \( -path '*/build/test-results/testDebugUnitTest/*.xml' -o -path '*/build/test-results/test/*.xml' \) -print | while read -r f; do cp "$f" "$OUT/reports/"; done
 find . -path ./evidence -prune -o -path '*/build/outputs/roborazzi/*.png' -print -o -path '*/build/intermediates/roborazzi/*.png' -print | while read -r f; do cp "$f" "$OUT/"; done
 cp app/build/outputs/apk/debug/app-debug.apk "$OUT/" 2>/dev/null || true
 ls -l "$OUT/app-debug.apk" > "$OUT/apk.txt" 2>&1 || true

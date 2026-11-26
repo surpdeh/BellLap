@@ -1,0 +1,24 @@
+{
+  "min": {
+    "bell_snr20.bell.recall": 1.0,
+    "bell_snr10.bell.recall": 1.0,
+    "bell_snr5.bell.recall": 1.0,
+    "bell_snr0.bell.recall": 0.5,
+    "bell_snr10_distractors.bell.recall": 1.0,
+    "flag.flag.iou": 0.8,
+    "crossings.crossings.recall": 0.9,
+    "crossings.crossings.precision": 0.9,
+    "race.bell.recall": 1.0,
+    "race.flag.iou": 0.8,
+    "race.crossings.recall": 0.9
+  },
+  "max": {
+    "bell_snr20.bell.false_alarms_per_hour": 0.0,
+    "bell_snr5.bell.false_alarms_per_hour": 0.0,
+    "bell_snr10_distractors.bell.false_alarms_per_hour": 0.0,
+    "flag.flag.interval_count_error": 0.0,
+    "crossings.crossings.mean_abs_error_frames": 0.5,
+    "race.flag.interval_count_error": 0.0,
+    "race.bell.false_alarms_per_hour": 0.0
+  }
+}
