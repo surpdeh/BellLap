@@ -105,6 +105,12 @@ jobs:
           disable-animations: true
           script: bash scripts/ci/emulator-e2e.sh
 
+      - name: Convert screen recording to GIF
+        if: always() && hashFiles('evidence/e2e.mp4') != ''
+        run: |
+          sudo apt-get install -y -qq ffmpeg
+          ffmpeg -loglevel error -y -i evidence/e2e.mp4 -vf "fps=8,scale=360:-1:flags=lanczos" evidence/e2e.gif
+
       - if: always()
         uses: actions/upload-artifact@v4
         with:
