@@ -1,0 +1,54 @@
+@startuml
+title BellLap session state machine (F04)
+hide empty description
+
+[*] --> Setup
+
+state "SETUP\nlive preview, finish line" as Setup
+state "STANDBY\nscreen dimmed, listening for bell" as Standby
+state "ARMING\n10 s delay" as Arming
+state "ARMED\ncamera on, watching for flag" as Armed
+state "ACQUISITION\nrecording + crossings" as Acq {
+    state "flag seen" as FlagSeen
+    state "flag absent\n(timer running)" as FlagAbsent
+    [*] --> FlagSeen : FlagSeen (from ARMED)
+    [*] --> FlagAbsent : RecordNow (from ARMED)
+    FlagSeen --> FlagAbsent : FlagLost
+    FlagAbsent --> FlagSeen : FlagSeen
+    FlagSeen --> FlagSeen : CrossingDetected / PlayCrossingBeep
+    FlagAbsent --> FlagAbsent : CrossingDetected / PlayCrossingBeep
+}
+state "REVIEW overlay\n(session keeps running underneath)" as Review
+
+Setup --> Standby : StandbyRequested
+Standby --> Arming : BellDetected | BellNow\n/ RestoreBrightness
+Arming --> Armed : ArmDelayElapsed\n/ PlayArmedBeeps
+Armed --> Acq : FlagSeen / StartRecording
+Armed --> Acq : RecordNow / StartRecording
+
+Acq --> Armed : FlagAbsentTimeout (flag absent) | Stop\n/ StopRecording, PlayStandDownChime
+
+Standby --> Setup : Stop / RestoreBrightness
+Arming --> Setup : Stop
+Armed --> Setup : Stop
+
+Setup --> Review : EnterReview
+Standby --> Review : EnterReview
+Armed --> Review : EnterReview
+Review --> Setup : ExitReview (entered from SETUP)
+Review --> Standby : ExitReview (entered from STANDBY)
+Review --> Armed : ExitReview (entered from ARMED)
+
+note bottom of Review
+  Not allowed from ARMING or ACQUISITION.
+  Bell, flag and timer events still apply
+  to the underlying session while reviewing,
+  and ExitReview returns to its current state.
+end note
+
+note bottom of Acq
+  FlagAbsentTimeout is ignored while the flag is seen.
+  Default timeout 15 s (configurable).
+  Any event not shown is ignored and logged.
+end note
+@enduml
