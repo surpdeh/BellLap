@@ -178,7 +178,7 @@ Each feature becomes one GitHub issue, `[Fxx] Title`, with acceptance criteria a
   - **Synthetic fixture generators**: a bell-tone WAV with crowd or pink noise, a chequered-flag video, and riders crossing a line. These work with no real footage.
   - A fixture manifest with labels.
 - [x] **F03b Real footage pipeline:** ([#5](https://github.com/surpdeh/belllap/issues/5)) a private bucket (or LFS once the repo is private), a downloader script with a CI secret, a labelling format (`labels.json`: bell times, flag intervals, crossing frames), and contribution docs ([FIXTURES.md](FIXTURES.md)).
-- [ ] **F04 Session state machine:** ([#6](https://github.com/surpdeh/belllap/issues/6))
+- [x] **F04 Session state machine:** ([#6](https://github.com/surpdeh/belllap/issues/6))
   - Pure-Kotlin reducer for SETUP, STANDBY, ARMING, ARMED, ACQUISITION and REVIEW, with manual overrides and timeouts.
   - Exhaustive unit tests using virtual time.
   - Optional TLA+ check of the core properties (pstack `/create-formal-verification-skill`).
