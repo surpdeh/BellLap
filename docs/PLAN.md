@@ -96,6 +96,7 @@ The following were **not requested**: start-list import, CSV/PDF results export,
 ### 1.7 Open questions
 
 - [ ] **Repo visibility:** you said "private", but `surpdeh/belllap` is currently **public**.
+  - **Decision (F03b): a private S3-compatible bucket (Cloudflare R2)**, fetched by `scripts/fixtures/fetch.sh`; see [FIXTURES.md](FIXTURES.md). LFS only once the repo is private.
   - Until it is made private, real race footage and field-report media must **not** be committed (no LFS). They live only in a private bucket.
   - The plan assumes the repo becomes private, or that footage stays in the bucket either way.
 - [ ] **Test footage:** the plan uses a small labelled golden set (LFS once the repo is private, otherwise the bucket) plus an optional larger bucket. Bucket choice and credentials are still to be decided (F03b).
@@ -176,7 +177,7 @@ Each feature becomes one GitHub issue, `[Fxx] Title`, with acceptance criteria a
   - `FrameSource` and `AudioSource` interfaces with file-backed implementations.
   - **Synthetic fixture generators**: a bell-tone WAV with crowd or pink noise, a chequered-flag video, and riders crossing a line. These work with no real footage.
   - A fixture manifest with labels.
-- [ ] **F03b Real footage pipeline:** ([#5](https://github.com/surpdeh/belllap/issues/5)) a private bucket (or LFS once the repo is private), a downloader script with a CI secret, a labelling format (`labels.json`: bell times, flag intervals, crossing frames), and contribution docs.
+- [x] **F03b Real footage pipeline:** ([#5](https://github.com/surpdeh/belllap/issues/5)) a private bucket (or LFS once the repo is private), a downloader script with a CI secret, a labelling format (`labels.json`: bell times, flag intervals, crossing frames), and contribution docs ([FIXTURES.md](FIXTURES.md)).
 - [ ] **F04 Session state machine:** ([#6](https://github.com/surpdeh/belllap/issues/6))
   - Pure-Kotlin reducer for SETUP, STANDBY, ARMING, ARMED, ACQUISITION and REVIEW, with manual overrides and timeouts.
   - Exhaustive unit tests using virtual time.

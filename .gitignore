@@ -15,5 +15,6 @@ testing/fixtures/generated/
 # Real footage never goes in git (see CLAUDE.md)
 *.mp4
 *.mov
+testing/fixtures/real/
 # Claude local settings
 .claude/settings.local.json
