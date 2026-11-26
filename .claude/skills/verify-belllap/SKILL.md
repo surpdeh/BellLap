@@ -49,7 +49,7 @@ It runs doctor, then `testDebugUnitTest`, `:testing:harness:replay`, `recordRobo
 |---|---|---|
 | Unit tests | `./gradlew testDebugUnitTest` | `*/build/test-results/testDebugUnitTest/*.xml` (tests/failures counts) |
 | One module | `./gradlew :core:statemachine:test --tests '*Foo*'` | same, per module |
-| Detector metrics | `./gradlew :testing:harness:replay` | **Stub until F03**: it only runs the harness unit tests and writes no `metrics.json`. Report as inconclusive. |
+| Detector metrics | `./gradlew :testing:harness:replay` | Writes `testing/harness/build/reports/metrics.json`, `contact-sheet.png` and `spectrogram.png`; fails below `testing/thresholds.json`. |
 | Screenshots | `./gradlew recordRoborazziDebug` | `app/src/test/screenshots/*.png`. **Open each with the Read tool and say what it shows.** |
 | Build | `./gradlew lintDebug assembleDebug` | `app/build/outputs/apk/debug/app-debug.apk` |
 
@@ -79,7 +79,7 @@ Cleanup keeps `evidence/` and the `build/` reports until the PR is opened. Never
 - `repo.maven.apache.org` can answer HTTP 429 on a cold cache. `tier1.sh` retries once. If it persists, rerun later and report the delay.
 - Robolectric cannot exercise CameraX, MediaCodec, `AudioRecord`, foreground services or permissions. Those are tier 2 or 3. Use the fake `FrameSource`/`AudioSource` in tier 1.
 - OpenCV on the JVM uses `org.openpnp:opencv`. Call `nu.pattern.OpenCV.loadShared()` in test setup.
-- Synthetic fixtures are generated deterministically (seeded) by `:testing:fixtures`. Never hand-edit generated files.
+- Synthetic fixtures are generated deterministically (seeded) by `:testing:fixtures` (`./gradlew :testing:fixtures:generateFixtures`). Never hand-edit generated files.
 - Gradle builds are not safe to run twice at once in the same checkout. Run one at a time.
 
 ## Proof status of this skill (F02)

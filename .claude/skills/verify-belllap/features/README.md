@@ -31,5 +31,5 @@ H1 title, one paragraph of user-visible behaviour, then exactly four H2s in orde
 
 - [Setup screen](./setup-screen.md): the launch screen with the mode status overlay. **Implemented (F00).**
 - [Session state machine](./state-machine.md): SETUP to STANDBY, ARMING, ARMED, ACQUISITION and REVIEW. **Not implemented yet (F04).**
-- [Replay mode](./replay.md): run the pipeline on a fixture MP4 and WAV. **Not implemented yet (F03, F24).**
+- [Replay mode](./replay.md): run the pipeline on a fixture MP4 and WAV. Fixtures and metrics (RP-1, RP-2) done in F03; in-app replay (RP-3, RP-4) **not implemented yet (F24).**
 - [Review screen](./review.md): finishing order and crossing marks for commissaire review. **Not implemented yet (M1).**

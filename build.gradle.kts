@@ -35,6 +35,12 @@ allprojects {
         extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension> {
             jvmToolchain(jdkVersion)
         }
+        // Android modules expose testDebugUnitTest; give pure-JVM modules the same name so one command runs every unit test.
+        tasks.register("testDebugUnitTest") {
+            group = "verification"
+            description = "Alias of test, so ./gradlew testDebugUnitTest covers JVM and Android modules."
+            dependsOn(tasks.named("test"))
+        }
     }
 
     plugins.withType<com.android.build.gradle.BasePlugin> {
