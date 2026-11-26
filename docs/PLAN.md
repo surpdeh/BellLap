@@ -163,29 +163,29 @@ Each feature becomes one GitHub issue, `[Fxx] Title`, with acceptance criteria a
 
 ### M0: Foundations (walking skeleton and verification first)
 
-- [ ] **F00 Project skeleton:**
+- [ ] **F00 Project skeleton:** ([#1](https://github.com/surpdeh/belllap/issues/1))
   - Gradle multi-module layout (§2.1) with a version catalog.
   - Compose app that launches to a placeholder SETUP screen.
   - ktlint/detekt and Android lint.
   - `./gradlew build` passes in the cloud container.
-- [ ] **F01 CI pipeline:** build, unit tests, lint, debug APK artifact, emulator smoke test with screenshot and screen-recording evidence, and a PR evidence comment (§4).
-- [ ] **F02 Verification skill:** `verify-belllap` covering launch, doctor, drive, evidence and cleanup.
+- [ ] **F01 CI pipeline:** ([#2](https://github.com/surpdeh/belllap/issues/2)) build, unit tests, lint, debug APK artifact, emulator smoke test with screenshot and screen-recording evidence, and a PR evidence comment (§4).
+- [ ] **F02 Verification skill:** ([#3](https://github.com/surpdeh/belllap/issues/3)) `verify-belllap` covering launch, doctor, drive, evidence and cleanup.
   - Proven end to end, both in the cloud container (JVM tests and Robolectric/Roborazzi screenshots) and in CI (emulator).
   - Includes a feature map ([VERIFICATION.md](VERIFICATION.md)).
-- [ ] **F03 Fixture framework:**
+- [ ] **F03 Fixture framework:** ([#4](https://github.com/surpdeh/belllap/issues/4))
   - `FrameSource` and `AudioSource` interfaces with file-backed implementations.
   - **Synthetic fixture generators**: a bell-tone WAV with crowd or pink noise, a chequered-flag video, and riders crossing a line. These work with no real footage.
   - A fixture manifest with labels.
-- [ ] **F03b Real footage pipeline:** a private bucket (or LFS once the repo is private), a downloader script with a CI secret, a labelling format (`labels.json`: bell times, flag intervals, crossing frames), and contribution docs.
-- [ ] **F04 Session state machine:**
+- [ ] **F03b Real footage pipeline:** ([#5](https://github.com/surpdeh/belllap/issues/5)) a private bucket (or LFS once the repo is private), a downloader script with a CI secret, a labelling format (`labels.json`: bell times, flag intervals, crossing frames), and contribution docs.
+- [ ] **F04 Session state machine:** ([#6](https://github.com/surpdeh/belllap/issues/6))
   - Pure-Kotlin reducer for SETUP, STANDBY, ARMING, ARMED, ACQUISITION and REVIEW, with manual overrides and timeouts.
   - Exhaustive unit tests using virtual time.
   - Optional TLA+ check of the core properties (pstack `/create-formal-verification-skill`).
-- [ ] **F05 Event log and tracing:**
+- [ ] **F05 Event log and tracing:** ([#7](https://github.com/surpdeh/belllap/issues/7))
   - A JSONL structured event log of state transitions, detector scores and device info.
   - A Timber rolling file tree.
   - `ApplicationExitInfo` capture.
-- [ ] **F24 Replay mode (debug builds):**
+- [ ] **F24 Replay mode (debug builds):** ([#8](https://github.com/surpdeh/belllap/issues/8))
   - Runs the whole pipeline (state machine and detectors) on a chosen MP4 and WAV, instead of the camera and mic.
   - This is the main way to verify on the emulator and in the field.
 
@@ -193,33 +193,33 @@ Each feature becomes one GitHub issue, `[Fxx] Title`, with acceptance criteria a
 
 Setup and capture:
 
-- [ ] **F10 Camera setup screen:** live preview; settings overlay with camera, resolution, 30/60 fps, automations, flag timeout and alerts; settings persisted with DataStore; mode status overlay.
-- [ ] **F11 Finish-line drawing:** draw a line with touch, then drag its endpoints to refine it. Stored in normalised coordinates and persisted.
-- [ ] **F12 Automatic white-line detection:** a suggested line with a confidence score. The user can accept or edit it. JVM tests run on fixture stills.
-- [ ] **F13 Session foreground service and standby:**
+- [ ] **F10 Camera setup screen:** ([#9](https://github.com/surpdeh/belllap/issues/9)) live preview; settings overlay with camera, resolution, 30/60 fps, automations, flag timeout and alerts; settings persisted with DataStore; mode status overlay.
+- [ ] **F11 Finish-line drawing:** ([#10](https://github.com/surpdeh/belllap/issues/10)) draw a line with touch, then drag its endpoints to refine it. Stored in normalised coordinates and persisted.
+- [ ] **F12 Automatic white-line detection:** ([#11](https://github.com/surpdeh/belllap/issues/11)) a suggested line with a confidence score. The user can accept or edit it. JVM tests run on fixture stills.
+- [ ] **F13 Session foreground service and standby:** ([#12](https://github.com/surpdeh/belllap/issues/12))
   - The microphone and camera FGS starts from the UI.
   - Dimmed-standby screen; brightness restored when the bell is heard.
   - Notification actions: Bell now, Record now, Stop, Exit.
   - Onboarding for permissions, the battery-optimisation exemption and OEM tips.
-- [ ] **F14 Bell detection v1:**
+- [ ] **F14 Bell detection v1:** ([#13](https://github.com/surpdeh/belllap/issues/13))
   - Spectral gate, then YAMNet (LiteRT) bell classes, then a persistence rule.
   - Sensitivity setting and a "Bell now" button.
   - Metrics on fixtures: target recall ≥ 0.9 and < 0.2 false alarms per hour.
-- [ ] **F15 Alert player:** armed beep series at +10 s, beep per finisher and stand-down chime, all at maximum volume through the alarm stream. Volume is restored afterwards.
-- [ ] **F25 Device capability probe:** dumps camera hardware level, fps ranges, supported session configurations and audio sources. Included in bug reports.
+- [ ] **F15 Alert player:** ([#14](https://github.com/surpdeh/belllap/issues/14)) armed beep series at +10 s, beep per finisher and stand-down chime, all at maximum volume through the alarm stream. Volume is restored afterwards.
+- [ ] **F25 Device capability probe:** ([#15](https://github.com/surpdeh/belllap/issues/15)) dumps camera hardware level, fps ranges, supported session configurations and audio sources. Included in bug reports.
 
 Detection and recording:
 
-- [ ] **F16 Flag detection v1:**
+- [ ] **F16 Flag detection v1:** ([#16](https://github.com/surpdeh/belllap/issues/16))
   - Texture detector running on ARMED analysis frames.
   - Hysteresis, and a configurable absence timeout (default 15 s).
   - Metrics on fixtures.
   - Debug overlay showing the detection box.
-- [ ] **F17 Acquisition recording:**
+- [ ] **F17 Acquisition recording:** ([#17](https://github.com/surpdeh/belllap/issues/17))
   - CameraX Recorder at 30/60 fps, one MP4 per acquisition, plus a sidecar JSON.
   - Auto-naming, and "Record now" / "Stop".
   - Free-storage guard.
-- [ ] **F18 Finish-crossing detection v1:**
+- [ ] **F18 Finish-crossing detection v1:** ([#18](https://github.com/surpdeh/belllap/issues/18))
   - Slit-scan along the line, with onset detection.
   - Live beep for each crossing.
   - Crossings saved to the sidecar.
@@ -228,23 +228,23 @@ Detection and recording:
 
 Review and output:
 
-- [ ] **F19 Review player:**
+- [ ] **F19 Review player:** ([#19](https://github.com/surpdeh/belllap/issues/19))
   - Acquisition list with rename and delete.
   - Exact seek, ±1 frame steps, previous/next finisher, pinch zoom and pan.
   - Add, move or delete finisher marks.
-- [ ] **F20 Placings and notes:** a free-text note per finisher, an ordered finish list per acquisition, and sharing the list as text.
-- [ ] **F21 Share frame:** share the current frame, full or zoomed crop, as a PNG/JPEG through the share sheet using FileProvider.
+- [ ] **F20 Placings and notes:** ([#20](https://github.com/surpdeh/belllap/issues/20)) a free-text note per finisher, an ordered finish list per acquisition, and sharing the list as text.
+- [ ] **F21 Share frame:** ([#21](https://github.com/surpdeh/belllap/issues/21)) share the current frame, full or zoomed crop, as a PNG/JPEG through the share sheet using FileProvider.
 
 Bug reports:
 
-- [ ] **F22 In-app bug report:**
+- [ ] **F22 In-app bug report:** ([#22](https://github.com/surpdeh/belllap/issues/22))
   - Description field.
   - Trace bundle and capability dump attached automatically.
   - Optional bell recording.
   - Optional video selection, trimmed to a window around a chosen point.
   - Consent screen before upload.
   - Upload progress and retry.
-- [ ] **F23 Bug report backend:**
+- [ ] **F23 Bug report backend:** ([#23](https://github.com/surpdeh/belllap/issues/23))
   - Cloudflare Worker acting as a GitHub App, creating issues labelled `field-report`.
   - R2 presigned uploads.
   - Integrity check, rate limit and size caps.
@@ -257,19 +257,19 @@ Bug reports:
 
 ### M2: Post-MVP (rough priority order)
 
-- [ ] **F30 Pre-roll ring buffer:** custom MediaCodec encoder, keeping the last N seconds encoded in RAM and flushing them on flag detection. Short GOP.
-- [ ] **F31 High-fps capture:** 120/240 fps through `HighSpeedVideoSessionConfig`, with a GL preview tap for flag and slit-scan analysis. Only on capable devices.
-- [ ] **F32 Photo-finish strip view in review:** tapping a column seeks to that frame.
-- [ ] **F33 Locked-screen standby:** a per-device self-test, wake on bell with `setShowWhenLocked`/`setTurnScreenOn`, and a headless camera fallback.
-- [ ] **F34 Bell personalisation:**
+- [ ] **F30 Pre-roll ring buffer:** ([#24](https://github.com/surpdeh/belllap/issues/24)) custom MediaCodec encoder, keeping the last N seconds encoded in RAM and flushing them on flag detection. Short GOP.
+- [ ] **F31 High-fps capture:** ([#25](https://github.com/surpdeh/belllap/issues/25)) 120/240 fps through `HighSpeedVideoSessionConfig`, with a GL preview tap for flag and slit-scan analysis. Only on capable devices.
+- [ ] **F32 Photo-finish strip view in review:** ([#26](https://github.com/surpdeh/belllap/issues/26)) tapping a column seeks to that frame.
+- [ ] **F33 Locked-screen standby:** ([#27](https://github.com/surpdeh/belllap/issues/27)) a per-device self-test, wake on bell with `setShowWhenLocked`/`setTurnScreenOn`, and a headless camera fallback.
+- [ ] **F34 Bell personalisation:** ([#28](https://github.com/surpdeh/belllap/issues/28))
   - Feasibility study of a few-shot YAMNet-embedding prototype against an on-device trained head.
   - If feasible, local recording, refinement and A/B metrics.
-- [ ] **F35 ML flag detector:** EfficientDet-Lite0 single-class model, with a training pipeline and dataset from consented field footage.
-- [ ] **F36 Rider detection and tracking:** splits bunches and refines front-wheel crossing time in post-process.
-- [ ] **F37 Wear OS remote:** watch tile and app with "Record now", "Bell now", "Stop" and a status view.
-- [ ] **F38 Volume-key shortcut:** a hardware key arms or starts recording while the app is in the foreground.
-- [ ] **F40 Real-device CI:** nightly Firebase Test Lab matrix of capability probes and camera smoke tests.
-- [ ] **F41 Release pipeline:** signed AAB/APK on tag, GitHub Release, Play internal track (pending decision §1.7).
+- [ ] **F35 ML flag detector:** ([#29](https://github.com/surpdeh/belllap/issues/29)) EfficientDet-Lite0 single-class model, with a training pipeline and dataset from consented field footage.
+- [ ] **F36 Rider detection and tracking:** ([#30](https://github.com/surpdeh/belllap/issues/30)) splits bunches and refines front-wheel crossing time in post-process.
+- [ ] **F37 Wear OS remote:** ([#31](https://github.com/surpdeh/belllap/issues/31)) watch tile and app with "Record now", "Bell now", "Stop" and a status view.
+- [ ] **F38 Volume-key shortcut:** ([#32](https://github.com/surpdeh/belllap/issues/32)) a hardware key arms or starts recording while the app is in the foreground.
+- [ ] **F40 Real-device CI:** ([#33](https://github.com/surpdeh/belllap/issues/33)) nightly Firebase Test Lab matrix of capability probes and camera smoke tests.
+- [ ] **F41 Release pipeline:** ([#34](https://github.com/surpdeh/belllap/issues/34)) signed AAB/APK on tag, GitHub Release, Play internal track (pending decision §1.7).
 
 ---
 
