@@ -22,3 +22,14 @@ tasks.register<JavaExec>("replay") {
     outputs.dir(reportsDir)
     args(reportsDir.get().asFile.absolutePath, thresholds.absolutePath)
 }
+
+tasks.register<JavaExec>("replayReal") {
+    group = "verification"
+    description = "Replays real footage fetched by scripts/fixtures/fetch.sh (report only). Skips cleanly if absent."
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("net.belllap.testing.harness.ReplayReal")
+    val root = rootProject.file("testing/fixtures/real")
+    outputs.upToDateWhen { false } // fixtures live outside the build; always re-run
+    outputs.dir(reportsDir)
+    args(reportsDir.get().asFile.absolutePath, root.absolutePath)
+}
