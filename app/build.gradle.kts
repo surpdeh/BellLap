@@ -24,6 +24,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     testOptions {
@@ -43,6 +44,7 @@ roborazzi {
 
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
+    implementation(project(":core:log"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.ui)
