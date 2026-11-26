@@ -163,7 +163,7 @@ Each feature becomes one GitHub issue, `[Fxx] Title`, with acceptance criteria a
 
 ### M0: Foundations (walking skeleton and verification first)
 
-- [ ] **F00 Project skeleton:** ([#1](https://github.com/surpdeh/belllap/issues/1))
+- [x] **F00 Project skeleton:** ([#1](https://github.com/surpdeh/belllap/issues/1))
   - Gradle multi-module layout (§2.1) with a version catalog.
   - Compose app that launches to a placeholder SETUP screen.
   - ktlint/detekt and Android lint.
