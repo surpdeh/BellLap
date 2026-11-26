@@ -1,0 +1,11 @@
+style:
+  MagicNumber:
+    ignorePropertyDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    ignoreAnnotation: true
+naming:
+  FunctionNaming:
+    ignoreAnnotated: ['Composable']
+complexity:
+  LongMethod:
+    ignoreAnnotated: ['Composable']
