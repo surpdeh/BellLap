@@ -168,7 +168,7 @@ Each feature becomes one GitHub issue, `[Fxx] Title`, with acceptance criteria a
   - Compose app that launches to a placeholder SETUP screen.
   - ktlint/detekt and Android lint.
   - `./gradlew build` passes in the cloud container.
-- [ ] **F01 CI pipeline:** ([#2](https://github.com/surpdeh/belllap/issues/2)) build, unit tests, lint, debug APK artifact, emulator smoke test with screenshot and screen-recording evidence, and a PR evidence comment (§4).
+- [x] **F01 CI pipeline:** ([#2](https://github.com/surpdeh/belllap/issues/2)) build, unit tests, lint, debug APK artifact, emulator smoke test with screenshot and screen-recording evidence, and a PR evidence comment (§4).
 - [ ] **F02 Verification skill:** ([#3](https://github.com/surpdeh/belllap/issues/3)) `verify-belllap` covering launch, doctor, drive, evidence and cleanup.
   - Proven end to end, both in the cloud container (JVM tests and Robolectric/Roborazzi screenshots) and in CI (emulator).
   - Includes a feature map ([VERIFICATION.md](VERIFICATION.md)).
@@ -284,7 +284,12 @@ Bug reports:
 | `release.yml` (F41) | Tag `v*` | Signed release APK/AAB using a keystore from secrets, then a GitHub Release. |
 | `nightly-devices.yml` (F40) | Cron | Firebase Test Lab on physical devices. |
 
-- [ ] Branch protection on `main`: `build-test` and `emulator-e2e` must pass, PRs must be squash-merged, and one review is required (the developer).
+- [ ] Branch protection on `main` (Settings → Branches → rule for `main`; a repo admin applies this once):
+  - Require a pull request before merging, with **1 approving review** (the developer).
+  - Require status checks to pass, **strict** (branch up to date): `build-test` and `emulator-e2e`. Do not require `evidence-comment`; it only reports.
+  - Allow **squash merging** only (Settings → General → Pull Requests), and disable merge commits and rebase merging.
+  - Restrict force pushes and deletions on `main`.
+  - Leave the `ci-evidence` branch unprotected: the `evidence-comment` job pushes to it with `GITHUB_TOKEN`.
 - [ ] Dependabot for Gradle and GitHub Actions.
 - [ ] The workflows already in the repo skip the Gradle jobs cleanly until F00 adds `gradlew`.
 

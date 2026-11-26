@@ -18,6 +18,9 @@ jobs:
     name: build-test
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
+      checks: write # action-junit-report creates the "JUnit Test Report" check run
     outputs:
       has_gradle: ${{ steps.detect.outputs.has_gradle }}
     steps:
@@ -41,7 +44,7 @@ jobs:
 
       - name: Lint, unit tests, screenshots, assemble
         if: steps.detect.outputs.has_gradle == 'true'
-        run: ./gradlew --continue lintDebug testDebugUnitTest verifyRoborazziDebug assembleDebug
+        run: ./gradlew --continue lintDebug detekt testDebugUnitTest verifyRoborazziDebug assembleDebug
 
       - name: Detector metrics (synthetic fixtures)
         if: steps.detect.outputs.has_gradle == 'true' && hashFiles('testing/harness/build.gradle.kts') != ''
@@ -101,6 +104,14 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back emulated
           disable-animations: true
           script: bash scripts/ci/emulator-e2e.sh
+
+      - name: Convert screen recording to GIF
+        if: always() && hashFiles('evidence/e2e.mp4') != ''
+        continue-on-error: true # the GIF is a convenience; the MP4 is still uploaded
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          ffmpeg -loglevel error -y -i evidence/e2e.mp4 -vf "fps=8,scale=360:-1:flags=lanczos" evidence/e2e.gif
 
       - if: always()
         uses: actions/upload-artifact@v4
