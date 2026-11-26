@@ -1,0 +1,19 @@
+# Gradle / Android
+.gradle/
+build/
+local.properties
+*.iml
+.idea/
+captures/
+.externalNativeBuild/
+.cxx/
+*.keystore
+*.jks
+# Evidence and fixtures generated locally
+evidence/
+testing/fixtures/generated/
+# Real footage never goes in git (see CLAUDE.md)
+*.mp4
+*.mov
+# Claude local settings
+.claude/settings.local.json
