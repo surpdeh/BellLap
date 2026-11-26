@@ -49,7 +49,7 @@ jobs:
 
       - name: Test summary
         if: always() && steps.detect.outputs.has_gradle == 'true'
-        uses: mikepenz/action-junit-report@v5
+        uses: mikepenz/action-junit-report@v6
         with:
           report_paths: '**/build/test-results/**/TEST-*.xml'
           detailed_summary: true
