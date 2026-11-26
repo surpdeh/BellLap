@@ -169,7 +169,7 @@ Each feature becomes one GitHub issue, `[Fxx] Title`, with acceptance criteria a
   - ktlint/detekt and Android lint.
   - `./gradlew build` passes in the cloud container.
 - [x] **F01 CI pipeline:** ([#2](https://github.com/surpdeh/belllap/issues/2)) build, unit tests, lint, debug APK artifact, emulator smoke test with screenshot and screen-recording evidence, and a PR evidence comment (§4).
-- [ ] **F02 Verification skill:** ([#3](https://github.com/surpdeh/belllap/issues/3)) `verify-belllap` covering launch, doctor, drive, evidence and cleanup.
+- [x] **F02 Verification skill:** ([#3](https://github.com/surpdeh/belllap/issues/3)) `verify-belllap` covering launch, doctor, drive, evidence and cleanup.
   - Proven end to end, both in the cloud container (JVM tests and Robolectric/Roborazzi screenshots) and in CI (emulator).
   - Includes a feature map ([VERIFICATION.md](VERIFICATION.md)).
 - [ ] **F03 Fixture framework:** ([#4](https://github.com/surpdeh/belllap/issues/4))
