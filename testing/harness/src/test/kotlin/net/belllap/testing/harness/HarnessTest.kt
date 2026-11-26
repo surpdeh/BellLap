@@ -76,4 +76,25 @@ class HarnessTest {
         val d = BaselineCrossingDetector().also { det -> flag.forEach(det::accept) }
         assertEquals(0, d.crossingsNs.size)
     }
+
+    @Test
+    fun realFixturesAreSkippedCleanlyWhenAbsent() {
+        val missing = java.io.File("build/no-such-real-fixtures")
+        assertEquals(emptyList<String>(), RealFixtures.discover(missing))
+        val out = java.nio.file.Files.createTempDirectory("real").toFile()
+        replayRealMain(arrayOf(out.path, missing.path))
+        assertTrue(java.io.File(out, "real-metrics.json").readText().contains("\"skipped\""))
+    }
+
+    @Test
+    fun realFixturesAreDiscoveredAndReplayedWhenPresent() {
+        val root = java.nio.file.Files.createTempDirectory("real").toFile()
+        net.belllap.testing.fixtures.FixtureWriter.write(root, listOf(Fixtures.bell(20)))
+        java.io.File(root, "not_a_fixture").mkdirs()
+        assertEquals(listOf("bell_snr20"), RealFixtures.discover(root))
+        val out = java.nio.file.Files.createTempDirectory("realout").toFile()
+        replayRealMain(arrayOf(out.path, root.path))
+        val text = java.io.File(out, "real-metrics.json").readText()
+        assertTrue(text.contains("\"ran\"") && text.contains("bell_snr20.bell.recall"))
+    }
 }
