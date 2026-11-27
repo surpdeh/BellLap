@@ -16,5 +16,9 @@ object TestTags {
     const val TOGGLE_BEEPS = "toggle_beeps"
     const val TOGGLE_VOLUME = "toggle_volume"
     const val FLAG_TIMEOUT_SLIDER = "flag_timeout_slider"
+    const val LINE_BUTTON = "line_button"
+    const val LINE_CLEAR_BUTTON = "line_clear_button"
+    const val LINE_EDITOR = "line_editor"
+    const val LINE_OVERLAY = "line_overlay"
     const val VOLUME_SLIDER = "volume_slider"
 }
