@@ -85,9 +85,17 @@ fun SetupScreen(
                 .padding(16.dp),
         )
         if (permission == PermissionUi.GRANTED) {
-            Row(
+            Button(
+                onClick = { onSettingsOpenChange(!settingsOpen) },
                 modifier = Modifier
                     .align(Alignment.TopEnd)
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
+                    .padding(16.dp)
+                    .testTag(TestTags.SETTINGS_BUTTON),
+            ) { Text(if (settingsOpen) "Close" else "Settings") }
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
                     .windowInsetsPadding(WindowInsets.safeDrawing)
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -102,10 +110,6 @@ fun SetupScreen(
                     onClick = { lineEditing = !lineEditing },
                     modifier = Modifier.testTag(TestTags.LINE_BUTTON),
                 ) { Text(if (lineEditing) "Done" else "Finish line") }
-                Button(
-                    onClick = { onSettingsOpenChange(!settingsOpen) },
-                    modifier = Modifier.testTag(TestTags.SETTINGS_BUTTON),
-                ) { Text(if (settingsOpen) "Close" else "Settings") }
             }
         }
         if (settingsOpen && permission == PermissionUi.GRANTED) {
