@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import com.github.takahirom.roborazzi.captureRoboImage
+import net.belllap.core.model.BellSensitivity
 import net.belllap.core.model.CameraCapabilities
 import net.belllap.core.model.CaptureSettings
 import net.belllap.core.model.OutputSize
@@ -37,6 +38,7 @@ class SetupScreenTest {
         settingsOpen: Boolean = false,
         settings: CaptureSettings = CaptureSettings(),
         onChange: (CaptureSettings) -> Unit = {},
+        onStandby: () -> Unit = {},
     ) = SetupScreen(
         settings = settings,
         capabilities = caps,
@@ -46,6 +48,7 @@ class SetupScreenTest {
         onSettingsChange = onChange,
         onRequestPermissions = {},
         onOpenSystemSettings = {},
+        onStandby = onStandby,
         preview = { CameraPreviewPlaceholder() },
     )
 
@@ -80,12 +83,35 @@ class SetupScreenTest {
     }
 
     @Test
+    fun bellSensitivityChipsSetTheSettingAndFollowTheBellToggle() {
+        var latest: CaptureSettings? = null
+        composeRule.setContent { Screen(settingsOpen = true, onChange = { latest = it }) }
+        composeRule.onNodeWithTag("chip_High").performScrollTo().performClick()
+        assertEquals(BellSensitivity.HIGH, latest?.bellSensitivity)
+    }
+
+    @Test
+    fun sensitivityChipsAreDisabledWhenBellDetectionIsOff() {
+        composeRule.setContent { Screen(settingsOpen = true, settings = CaptureSettings(bellAutomation = false)) }
+        composeRule.onNodeWithTag("chip_Low").assertIsNotEnabled()
+    }
+
+    @Test
+    fun standbyButtonStartsStandby() {
+        var standby = 0
+        composeRule.setContent { Screen(onStandby = { standby++ }) }
+        composeRule.onNodeWithTag(TestTags.STANDBY_BUTTON).assertIsDisplayed().performClick()
+        assertEquals(1, standby)
+    }
+
+    @Test
     fun permissionRationaleReplacesPreviewUntilGranted() {
         composeRule.setContent { Screen(permission = PermissionUi.RATIONALE) }
 
         composeRule.onNodeWithTag(TestTags.PERMISSION_RATIONALE).assertIsDisplayed()
         composeRule.onNodeWithTag(TestTags.GRANT_BUTTON).assertIsDisplayed()
         composeRule.onNodeWithTag(TestTags.SETTINGS_BUTTON).assertDoesNotExist()
+        composeRule.onNodeWithTag(TestTags.STANDBY_BUTTON).assertDoesNotExist()
     }
 
     @Test

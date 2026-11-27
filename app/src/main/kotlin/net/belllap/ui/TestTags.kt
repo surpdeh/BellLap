@@ -17,4 +17,9 @@ object TestTags {
     const val TOGGLE_VOLUME = "toggle_volume"
     const val FLAG_TIMEOUT_SLIDER = "flag_timeout_slider"
     const val VOLUME_SLIDER = "volume_slider"
+    const val STANDBY_BUTTON = "standby_button"
+    const val STANDBY_SCREEN = "standby_screen"
+    const val BELL_NOW_BUTTON = "bell_now_button"
+    const val BELL_STATUS = "bell_status"
+    const val STOP_BUTTON = "stop_button"
 }
