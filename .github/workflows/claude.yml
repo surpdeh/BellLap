@@ -42,6 +42,7 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          prompt: ${{ github.event_name == 'issues' && format('Implement issue #{0} following CLAUDE.md. Run tier 1 verification (verify-belllap skill), then open a PR that closes the issue with the Verification section filled in.', github.event.issue.number) || '' }}
+          prompt: >-
+            ${{ github.event_name == 'issues' && format('Implement issue #{0} following CLAUDE.md. Run tier 1 verification (verify-belllap skill), then open a PR that closes the issue with the Verification section filled in.', github.event.issue.number) || '' }}
           claude_args: |
             --allowedTools "Bash(./gradlew:*),Bash(git:*),Bash(gh:*),Bash(ls:*),Bash(find:*),Read,Write,Edit,Glob,Grep"
