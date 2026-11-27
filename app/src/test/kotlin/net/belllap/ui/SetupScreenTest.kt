@@ -7,6 +7,7 @@ import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import com.github.takahirom.roborazzi.captureRoboImage
 import net.belllap.core.model.CameraCapabilities
 import net.belllap.core.model.CaptureSettings
@@ -74,7 +75,7 @@ class SetupScreenTest {
 
         composeRule.onNodeWithTag(TestTags.TOGGLE_BELL).performClick()
         assertEquals(CaptureSettings(bellAutomation = false), latest)
-        composeRule.onNodeWithTag(TestTags.TOGGLE_VOLUME).performClick()
+        composeRule.onNodeWithTag(TestTags.TOGGLE_VOLUME).performScrollTo().performClick()
         assertEquals(80, latest?.alertVolumePercent)
     }
 

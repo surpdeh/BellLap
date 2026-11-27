@@ -23,6 +23,11 @@ Preconditions: Doctor prints `DOCTOR_OK`.
 - **Tier 2, real launch (SS-1, SS-2, SS-4 on a real OS):** push the PR and read the CI evidence comment. `LaunchTest.launchesToSetupScreen` must pass, `evidence/01-setup-launch.png` shows the same screen, and the GIF shows the launch. You cannot run this in the container.
 - **Full set with evidence:** `.claude/skills/verify-belllap/scripts/tier1.sh`.
 
+## F10 additions
+
+- Settings overlay (`settings_button`, `settings_overlay`), permission rationale (`permission_rationale`, `grant_button`, `open_settings_button`). Goldens: `setup_settings_overlay.png`, `setup_permission_rationale.png`.
+- Tier 2 `LaunchTest` grants camera and mic, so the emulator screenshot shows the emulated camera preview.
+
 ## Gotchas
 
 - `SS-4` (insets, cutouts) is not provable by the Robolectric screenshot, which has no cutout. It needs the tier 2 emulator or a phone.
