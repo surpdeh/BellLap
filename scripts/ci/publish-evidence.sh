@@ -35,7 +35,12 @@ RAW="https://github.com/${GITHUB_REPOSITORY}/blob/ci-evidence/${DEST}"
   echo "| 2 emulator e2e | ${E2E_RESULT} |"
   echo
   METRICS=$(find artifacts -name metrics.json | head -1)
-  if [ -n "$METRICS" ]; then echo "### Detector metrics"; echo '```json'; head -c 4000 "$METRICS"; echo; echo '```'; fi
+  if [ -n "$METRICS" ]; then echo "### Detector metrics"; echo '```json'; head -c 6000 "$METRICS"; echo; echo '```'; fi
+  YAMNET=$(find artifacts -name metrics-yamnet.json | head -1)
+  if [ -n "$YAMNET" ]; then
+    echo "<details><summary>Bell metrics with YAMNet stage 1 (scripts/bell/replay-yamnet.sh)</summary>"
+    echo; echo '```json'; grep -E '"(source|bellStage1|violations)"|bell\.' "$YAMNET" | head -c 6000; echo; echo '```'; echo "</details>"
+  fi
   if [ -n "$IMAGES" ]; then
     echo "### Screens"
     for i in $IMAGES; do echo "<details><summary>${i}</summary><img src=\"${RAW}/${i}?raw=true\" width=\"360\"></details>"; done

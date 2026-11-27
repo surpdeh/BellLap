@@ -1,59 +1,14 @@
 package net.belllap.testing.harness
 
-import net.belllap.audio.source.PcmChunk
-import net.belllap.testing.fixtures.BellAudioGenerator
 import net.belllap.testing.fixtures.SceneRenderer
 import net.belllap.vision.core.Frame
-import kotlin.math.PI
 import kotlin.math.abs
-import kotlin.math.cos
 
-/**
+/*
  * Deliberately simple reference detectors. They exist so the replay harness has something to measure before the real
- * detectors (F-bell, F-flag, F-finishline) land; those replace these and must beat the same thresholds.
- * Pure Kotlin: they only see [PcmChunk] and [Frame], never a clock.
+ * flag and finish-line detectors (F16, F18) land; those replace these and must beat the same thresholds. The bell
+ * baseline was replaced by the F14 cascade in `:audio:bell`. Pure Kotlin: they only see [Frame], never a clock.
  */
-class BaselineBellDetector(private val sampleRate: Int) {
-    private val bins = BellAudioGenerator.PARTIALS.map { it * BellAudioGenerator.F0 }
-    private var lastOnsetNs = Long.MIN_VALUE
-    private var prevRatio = 0.0
-    val onsetsNs = ArrayList<Long>()
-
-    /** Feeds one chunk (about 20 ms). Narrowband energy at the bell's partials over total energy marks a strike. */
-    fun accept(chunk: PcmChunk) {
-        val x = chunk.samples
-        if (x.isEmpty()) return
-        val total = x.sumOf { it.toDouble() * it } / x.size
-        if (total < MIN_POWER) return
-        val tonal = bins.sumOf { goertzelPower(x, it) }
-        val ratio = tonal / total
-        val rising = ratio > ON_RATIO && prevRatio <= ON_RATIO
-        prevRatio = ratio
-        if (rising && (lastOnsetNs == Long.MIN_VALUE || chunk.ptsNs - lastOnsetNs > REFRACTORY_NS)) {
-            onsetsNs += chunk.ptsNs
-            lastOnsetNs = chunk.ptsNs
-        }
-    }
-
-    private fun goertzelPower(x: ShortArray, hz: Double): Double {
-        val coeff = 2 * cos(2 * PI * hz / sampleRate)
-        var s1 = 0.0
-        var s2 = 0.0
-        for (v in x) {
-            val s = v + coeff * s1 - s2
-            s2 = s1
-            s1 = s
-        }
-        val power = s1 * s1 + s2 * s2 - coeff * s1 * s2
-        return 2 * power / x.size / x.size
-    }
-
-    companion object {
-        const val ON_RATIO = 0.25
-        const val MIN_POWER = 1.0
-        const val REFRACTORY_NS = 3_000_000_000L
-    }
-}
 
 /** Flags a waving flag: enough pixels changing a lot between frames for long enough (0.3% area, 0.5 s). */
 class BaselineFlagDetector(

@@ -17,7 +17,13 @@ object Fixtures {
 
     fun bell(snrDb: Int, distractors: Boolean = false, seed: Long = DEFAULT_SEED): Fixture {
         val name = "bell_snr${snrDb}${if (distractors) "_distractors" else ""}"
-        val audio = BellAudioGenerator(seed + snrDb, snrDb = snrDb.toDouble(), distractors = distractors).generate()
+        val strikes = BELL_RINGS_S.flatMap { BellAudioGenerator.ring(it, Random(seed + it.toLong())) }
+        val audio = BellAudioGenerator(
+            seed + snrDb,
+            onsetsS = strikes,
+            snrDb = snrDb.toDouble(),
+            distractors = distractors,
+        ).generate()
         val labels = Labels(
             name = name,
             seed = seed,
@@ -57,13 +63,16 @@ object Fixtures {
         return Fixture(labels.validate(), null, SceneRenderer.render(spec))
     }
 
-    /** A whole race: bell at 12 s, flag 24 to 36 s, riders crossing from 26 s (a single, then bunches of 4 and 2). */
+    /**
+     * A whole race: bell lap rung from 12 s, flag 24 to 36 s, riders crossing from 26 s (a single, then bunches of
+     * 4 and 2).
+     */
     fun race(seed: Long = DEFAULT_SEED): Fixture {
         val duration = RACE_SECONDS
         val audio = BellAudioGenerator(
             seed + 1,
             durationS = duration,
-            onsetsS = listOf(12.0),
+            onsetsS = BellAudioGenerator.ring(RACE_BELL_S, Random(seed + 2)),
             snrDb = 10.0,
             distractors = true,
         ).generate()
@@ -105,6 +114,9 @@ object Fixtures {
         return riders to frame + TAIL_FRAMES
     }
 
+    /** Each bell fixture has two bell laps, each a ring of strikes (see [BellAudioGenerator.ring]). */
+    val BELL_RINGS_S = listOf(8.0, 17.0)
+    private const val RACE_BELL_S = 12.0
     private const val FLAG_SECONDS = 24.0
     private const val RACE_SECONDS = 45.0
     private const val FRAMES_BETWEEN_GROUPS = 60

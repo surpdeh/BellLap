@@ -133,4 +133,18 @@ class FixturesTest {
         }
         assertTrue("expected rejection", threw)
     }
+
+    @Test
+    fun bellLapsAreRingsOfStrikesAndAmbienceIsDeterministic() {
+        val strikes = Fixtures.bell(10).labels.bellOnsetsNs
+        assertEquals(Fixtures.BELL_RINGS_S.size * BellAudioGenerator.RING_STRIKES, strikes.size)
+        strikes.zipWithNext().forEach { (a, b) ->
+            assertTrue(b - a in 300_000_000L..450_000_000L || b - a > 3_000_000_000L)
+        }
+        val a = AmbienceStream(5)
+        val b = AmbienceStream(5)
+        repeat(16 * 60) { assertArrayEquals(a.next(1000).samples, b.next(1000).samples) } // one minute
+        assertEquals(a.distractorCounts, b.distractorCounts)
+        assertTrue(a.distractorCounts.values.sum() >= 60 / 8)
+    }
 }

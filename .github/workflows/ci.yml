@@ -50,6 +50,15 @@ jobs:
         if: steps.detect.outputs.has_gradle == 'true' && hashFiles('testing/harness/build.gradle.kts') != ''
         run: ./gradlew :testing:harness:replay
 
+      - uses: actions/setup-python@v6
+        if: steps.detect.outputs.has_gradle == 'true' && hashFiles('scripts/bell/replay-yamnet.sh') != ''
+        with:
+          python-version: '3.12'
+
+      - name: Bell metrics with YAMNet stage 1 (synthetic fixtures)
+        if: steps.detect.outputs.has_gradle == 'true' && hashFiles('scripts/bell/replay-yamnet.sh') != ''
+        run: scripts/bell/replay-yamnet.sh
+
       - name: Test summary
         if: always() && steps.detect.outputs.has_gradle == 'true'
         uses: mikepenz/action-junit-report@v6
