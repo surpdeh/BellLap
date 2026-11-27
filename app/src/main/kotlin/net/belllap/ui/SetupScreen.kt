@@ -93,7 +93,7 @@ fun SetupScreen(
                     .padding(16.dp)
                     .testTag(TestTags.SETTINGS_BUTTON),
             ) { Text(if (settingsOpen) "Close" else "Settings") }
-            Row(
+            if (!settingsOpen) Row(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .windowInsetsPadding(WindowInsets.safeDrawing)
