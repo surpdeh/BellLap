@@ -15,6 +15,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -70,44 +71,67 @@ fun FinishLineOverlay(
             NormPoint.clampOf((o.x - origin.x) / size.width, (o.y - origin.y) / size.height)
 
         val gestureModifier = if (editing) {
-            Modifier.testTag(TestTags.LINE_EDITOR).pointerInput(origin, size) {
-                var grab: Grab? = null
-                detectDragGestures(
-                    onDragStart = { down ->
-                        val shown = draft?.let { currentMapping.sensorToDisplay(it) }
-                        grab = shown?.let { nearestHandle(it, down, grabPx, ::toScreen) }
-                        if (grab == null) {
-                            val p = currentMapping.displayToSensor(toDisplayNorm(down))
-                            draft = FinishLine(p, p)
-                            grab = Grab.END
-                        }
-                    },
-                    onDrag = { change, _ ->
-                        change.consume()
-                        val cur = draft ?: return@detectDragGestures
-                        val p = currentMapping.displayToSensor(toDisplayNorm(change.position))
-                        draft = if (grab == Grab.START) cur.copy(start = p) else cur.copy(end = p)
-                    },
-                    onDragEnd = { commit(draft, currentLine, onLineChange) { draft = it } },
-                    onDragCancel = { draft = currentLine },
-                )
-            }
+            Modifier.testTag(TestTags.LINE_EDITOR).lineDragGestures(
+                key = origin to size,
+                grabPx = grabPx,
+                draft = { draft },
+                setDraft = { draft = it },
+                previous = { currentLine },
+                mapping = { currentMapping },
+                toScreen = ::toScreen,
+                toDisplayNorm = ::toDisplayNorm,
+                onLineChange = onLineChange,
+            )
         } else {
             Modifier
         }
 
         Canvas(modifier = Modifier.fillMaxSize().then(gestureModifier)) {
             val shown = draft?.let { mapping.sensorToDisplay(it) } ?: return@Canvas
-            val a = toScreen(shown.start)
-            val b = toScreen(shown.end)
-            drawLine(LINE_COLOR, a, b, strokeWidth = strokePx, cap = StrokeCap.Round)
-            if (editing) {
-                for (p in listOf(a, b)) {
-                    drawCircle(Color.Black.copy(alpha = 0.4f), handlePx + strokePx, p)
-                    drawCircle(LINE_COLOR, handlePx, p, style = Stroke(width = strokePx))
-                }
-            }
+            drawFinishLine(toScreen(shown.start), toScreen(shown.end), editing, handlePx, strokePx)
         }
+    }
+}
+
+@Suppress("LongParameterList")
+private fun Modifier.lineDragGestures(
+    key: Any,
+    grabPx: Float,
+    draft: () -> FinishLine?,
+    setDraft: (FinishLine?) -> Unit,
+    previous: () -> FinishLine?,
+    mapping: () -> PreviewMapping,
+    toScreen: (NormPoint) -> Offset,
+    toDisplayNorm: (Offset) -> NormPoint,
+    onLineChange: (FinishLine?) -> Unit,
+): Modifier = pointerInput(key) {
+    var grab: Grab? = null
+    detectDragGestures(
+        onDragStart = { down ->
+            grab = draft()?.let { nearestHandle(mapping().sensorToDisplay(it), down, grabPx, toScreen) }
+            if (grab == null) {
+                val p = mapping().displayToSensor(toDisplayNorm(down))
+                setDraft(FinishLine(p, p))
+                grab = Grab.END
+            }
+        },
+        onDrag = { change, _ ->
+            change.consume()
+            val cur = draft() ?: return@detectDragGestures
+            val p = mapping().displayToSensor(toDisplayNorm(change.position))
+            setDraft(if (grab == Grab.START) cur.copy(start = p) else cur.copy(end = p))
+        },
+        onDragEnd = { commit(draft(), previous(), onLineChange, setDraft) },
+        onDragCancel = { setDraft(previous()) },
+    )
+}
+
+private fun DrawScope.drawFinishLine(a: Offset, b: Offset, editing: Boolean, handlePx: Float, strokePx: Float) {
+    drawLine(LINE_COLOR, a, b, strokeWidth = strokePx, cap = StrokeCap.Round)
+    if (!editing) return
+    for (p in listOf(a, b)) {
+        drawCircle(Color.Black.copy(alpha = 0.4f), handlePx + strokePx, p)
+        drawCircle(LINE_COLOR, handlePx, p, style = Stroke(width = strokePx))
     }
 }
 
@@ -127,7 +151,12 @@ private fun nearestHandle(
 }
 
 /** Commits a finished drag: unusable (tiny) lines are discarded and the previous line is restored. */
-private fun commit(draft: FinishLine?, previous: FinishLine?, onChange: (FinishLine?) -> Unit, reset: (FinishLine?) -> Unit) {
+private fun commit(
+    draft: FinishLine?,
+    previous: FinishLine?,
+    onChange: (FinishLine?) -> Unit,
+    reset: (FinishLine?) -> Unit,
+) {
     if (draft != null && draft.isUsable()) {
         onChange(draft)
     } else {

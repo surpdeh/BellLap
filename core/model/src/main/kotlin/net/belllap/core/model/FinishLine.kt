@@ -52,6 +52,7 @@ data class FinishLine(val start: NormPoint, val end: NormPoint) {
  * [rotationDegrees] is the clockwise rotation (0/90/180/270) applied to the sensor image for display;
  * [mirrored] flips the displayed image horizontally (front camera).
  */
+@Suppress("MagicNumber")
 data class PreviewMapping(val rotationDegrees: Int = 0, val mirrored: Boolean = false) {
     init {
         require(rotationDegrees in setOf(0, 90, 180, 270)) { "rotation must be 0/90/180/270" }
