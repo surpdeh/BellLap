@@ -6,6 +6,7 @@ plugins {
 dependencies {
     implementation(project(":testing:fixtures"))
     implementation(project(":audio:bell"))
+    implementation(project(":vision:flag"))
     implementation(libs.kotlinx.serialization.json)
     testImplementation(libs.junit)
 }

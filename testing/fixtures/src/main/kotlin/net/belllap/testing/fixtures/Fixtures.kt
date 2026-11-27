@@ -49,6 +49,19 @@ object Fixtures {
         return Fixture(labels.validate(), null, SceneRenderer.render(spec))
     }
 
+    /** The chequered banner and nothing else: a distractor the flag detector must never report. */
+    fun banner(seed: Long = DEFAULT_SEED): Fixture {
+        val spec = SceneSpec(seed, frameCount = (FLAG_SECONDS * SceneSpec.FPS).toInt())
+        val labels = Labels(
+            name = "banner",
+            seed = seed,
+            framesDir = "banner_frames",
+            fps = spec.fps,
+            distractors = listOf(DistractorLabel(Labels.BANNER_KIND, 0L)),
+        )
+        return Fixture(labels.validate(), null, SceneRenderer.render(spec))
+    }
+
     /** Riders crossing singly (groups of 1) and in bunches of 3 and 5, gaps of 6 to 12 frames inside a bunch. */
     fun crossings(seed: Long = DEFAULT_SEED): Fixture {
         val (riders, frameCount) = riderPlan(Random(seed), startFrame = 30, groupSizes = listOf(1, 1, 3, 5, 1))
@@ -96,7 +109,7 @@ object Fixtures {
     fun all(seed: Long = DEFAULT_SEED): List<Fixture> =
         SNRS_DB.map {
             bell(it, seed = seed)
-        } + bell(10, distractors = true, seed = seed) + flag(seed) + crossings(seed) + race(seed)
+        } + bell(10, distractors = true, seed = seed) + flag(seed) + banner(seed) + crossings(seed) + race(seed)
 
     private fun crossingLabels(riders: List<RiderSpec>, fps: Double) = riders.map {
         CrossingLabel(it.crossFrame, Math.round(it.crossFrame * NS / fps), it.group)

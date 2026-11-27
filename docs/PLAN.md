@@ -247,11 +247,12 @@ Setup and capture:
 
 Detection and recording:
 
-- [ ] **F16 Flag detection v1:** ([#16](https://github.com/surpdeh/belllap/issues/16))
+- [x] **F16 Flag detection v1:** ([#16](https://github.com/surpdeh/belllap/issues/16))
   - Texture detector running on ARMED analysis frames.
   - Hysteresis, and a configurable absence timeout (default 15 s).
   - Metrics on fixtures.
   - Debug overlay showing the detection box.
+  - Done: `:vision:flag` `ChequeredFlagDetector` (X-corner polarity, bimodal tiles, per-tile motion, 0.5 s onset and hold). The 15 s absence timeout stays in the state machine (`flagAbsentTimeoutMs`). The overlay is drawn by the harness (`flag-hit.png`, `flag-banner-rejected.png`, copies in `docs/evidence/F16/`); a live Compose overlay waits for the ARMED camera pipeline (F17). Tier 3 (a real flag on a phone) is still open.
 - [ ] **F17 Acquisition recording:** ([#17](https://github.com/surpdeh/belllap/issues/17))
   - CameraX Recorder at 30/60 fps, one MP4 per acquisition, plus a sidecar JSON.
   - Auto-naming, and "Record now" / "Stop".

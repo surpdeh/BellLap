@@ -137,8 +137,27 @@ private fun writeEvidence(outDir: File, fixturesDir: File) {
         "png",
         File(outDir, "contact-sheet.png"),
     )
+    writeFlagOverlays(outDir, fixturesDir)
     val bell = File(fixturesDir, "bell_snr10_distractors")
     val bellLabels = Labels.load(File(bell, Labels.FILE_NAME))
     val wav = WavIo.read(File(bell, requireNotNull(bellLabels.audioFile)))
     ImageIO.write(EvidenceImages.spectrogram(wav.samples, wav.sampleRate), "png", File(outDir, "spectrogram.png"))
 }
+
+/** `flag-hit.png`: a frame mid-wave with the box. `flag-banner-rejected.png`: the banner, seen and rejected. */
+private fun writeFlagOverlays(outDir: File, fixturesDir: File) {
+    for ((fixture, file, atS) in listOf(
+        Triple("flag", "flag-hit.png", FLAG_HIT_S),
+        Triple("banner", "flag-banner-rejected.png", BANNER_S),
+    )) {
+        val dir = File(fixturesDir, fixture)
+        val labels = Labels.load(File(dir, Labels.FILE_NAME))
+        val frames = ReplayRunner.loadFrames(dir, labels)
+        val run = FlagRun.over(frames)
+        val i = (atS * requireNotNull(labels.fps)).toInt()
+        ImageIO.write(FlagOverlay.render(frames[i], run.results[i]), "png", File(outDir, file))
+    }
+}
+
+private const val FLAG_HIT_S = 6.0
+private const val BANNER_S = 6.0

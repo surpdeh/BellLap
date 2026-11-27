@@ -12,7 +12,8 @@
     "crossings.crossings.precision": 0.9,
     "race.bell.recall": 1.0,
     "race.flag.iou": 0.8,
-    "race.crossings.recall": 0.9
+    "race.crossings.recall": 0.9,
+    "banner.flag.iou": 1.0
   },
   "max": {
     "bell_snr20.bell.false_alarms_per_hour": 0.0,
@@ -25,6 +26,10 @@
     "flag.flag.interval_count_error": 0.0,
     "crossings.crossings.mean_abs_error_frames": 0.5,
     "race.flag.interval_count_error": 0.0,
-    "race.bell.false_alarms_per_hour": 0.0
+    "race.bell.false_alarms_per_hour": 0.0,
+    "flag.flag.max_start_error_ms": 1000.0,
+    "banner.flag.false_visible_ms": 0.0,
+    "banner.flag.interval_count_error": 0.0,
+    "race.flag.max_start_error_ms": 1000.0
   }
 }

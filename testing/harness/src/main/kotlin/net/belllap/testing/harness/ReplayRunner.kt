@@ -26,7 +26,9 @@ object ReplayRunner {
             if (labels.audioFile != null) bell(dir, labels, prefix, out, stage1)
             if (labels.framesDir != null) {
                 val frames = loadFrames(dir, labels)
-                if (labels.flagIntervals.isNotEmpty()) flag(frames, labels, prefix, out)
+                if (labels.flagIntervals.isNotEmpty() || labels.distractors.any { it.kind == Labels.BANNER_KIND }) {
+                    flag(frames, labels, prefix, out)
+                }
                 if (labels.crossings.isNotEmpty()) crossings(frames, labels, prefix, out)
             }
         }
@@ -70,9 +72,8 @@ object ReplayRunner {
     }
 
     private fun flag(frames: List<Frame>, labels: Labels, prefix: String, out: MutableMap<String, Double>) {
-        val detector = BaselineFlagDetector()
-        frames.forEach(detector::accept)
-        val found = detector.finish()
+        val run = FlagRun.over(frames)
+        val found = run.intervals
         val truth = labels.flagIntervals.map { it.startNs until it.endNs }
         out["$prefix.flag.iou"] = Metrics.intervalIou(truth, found)
         out["$prefix.flag.interval_count_error"] = Math.abs(found.size - truth.size).toDouble()
@@ -80,6 +81,12 @@ object ReplayRunner {
                 (t, f) ->
             Math.abs(f.first - t.first) / NS_PER_MS
         } ?: 0.0
+        if (truth.isEmpty()) {
+            // A distractor-only fixture: any visible frame is a false positive. (With a real flag, hysteresis lag
+            // at the edges is not one, and shows in iou and max_start_error_ms instead.)
+            val frameMs = NS_PER_S / requireNotNull(labels.fps) / NS_PER_MS
+            out["$prefix.flag.false_visible_ms"] = run.visible.count { it } * frameMs
+        }
     }
 
     private fun crossings(frames: List<Frame>, labels: Labels, prefix: String, out: MutableMap<String, Double>) {
