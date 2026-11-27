@@ -4,7 +4,7 @@ The maintained source for verifying user-facing behaviour. Read this index, then
 
 ## Baseline preconditions
 
-- Work from the repo root in the cloud container. `ANDROID_HOME=/opt/android-sdk`, JDK 21, `./gradlew` runs (Launch and Doctor in `../SKILL.md`).
+- Work from the repo root in the cloud container. `ANDROID_HOME=/opt/android-sdk`, JDK 25 (bytecode target 21), `./gradlew` runs (Launch and Doctor in `../SKILL.md`).
 - Run Doctor first. It must print `DOCTOR_OK`.
 - Tier 1 has no emulator, no camera and no microphone. Use fakes and fixtures.
 - Run one Gradle build at a time.

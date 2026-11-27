@@ -6,7 +6,7 @@ This plan applies from the first build. Its goal is that every PR, starting with
 
 | Environment | Has | Lacks |
 |---|---|---|
-| Claude cloud container ("belllap" env) | JDK 21, Gradle, Android SDK 36 (setup script), 4 CPU, 15 GB RAM, Google Maven via `dl.google.com` | **KVM, so no emulator**; camera; mic; GPU |
+| Claude cloud container ("belllap" env) | JDK 25 (JDK 21 also present), Gradle, Android SDK 36 (setup script), 4 CPU, 15 GB RAM, Google Maven via `dl.google.com` | **KVM, so no emulator**; camera; mic; GPU |
 | GitHub Actions `ubuntu-latest` | KVM, Android SDK, `android-emulator-runner` | Real camera, high-speed capture, real OEM behaviour |
 | Physical phones (developer or Firebase Test Lab) | Everything | Automation by cloud agents (Test Lab comes later, F40) |
 

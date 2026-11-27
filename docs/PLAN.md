@@ -110,7 +110,7 @@ Full proof points are in [research/technical-architecture.md](research/technical
 
 | Concern | Decision |
 |---|---|
-| Platform | Kotlin, Jetpack Compose, **minSdk 29**, targetSdk 36 (plan for 37), AGP 8.x, JDK 21 |
+| Platform | Kotlin, Jetpack Compose, **minSdk 29**, targetSdk 36 (plan for 37), AGP 9.x (built-in Kotlin), Gradle 9.x, JDK 25 toolchain, Java 21 bytecode |
 | Session lifetime | One `SessionForegroundService` with `foregroundServiceType="microphone\|camera"`, **started from the visible UI** when the user taps Standby. A camera or microphone FGS cannot be created from the background on Android 14+. Default standby is dimmed and kept on. |
 | Audio | `AudioRecord` at 16 kHz mono, using the `UNPROCESSED` source if supported and `MIC` otherwise. Stage-0 FFT gate on 1.5–8 kHz tonal decaying peaks, then YAMNet (LiteRT) bell classes on candidates, then a persistence rule (N hits in 3 s). |
 | Camera (MVP) | CameraX 1.7 `SessionConfig` with Preview, ImageAnalysis (~640×480 luma) and VideoCapture at 30/60 fps. Frame-rate range set explicitly. |
@@ -278,7 +278,7 @@ Bug reports:
 
 | Workflow | Trigger | Jobs |
 |---|---|---|
-| `ci.yml` | PR, push to `main` | **build-test:** JDK 21 and Gradle cache; `./gradlew lintDebug detekt testDebugUnitTest verifyRoborazziDebug assembleDebug`. Uploads the APK, JUnit and lint reports and Roborazzi screenshots, and writes a job summary. **emulator-e2e** (needs build-test): KVM plus `reactivecircus/android-emulator-runner` (API 34, ATD x86_64); `connectedDebugAndroidTest`, including the Replay e2e on fixtures; `adb screenrecord`; screenshots; logcat. Uploads all of these. **evidence-comment:** pushes PNG/GIF evidence to the `ci-evidence` branch under `pr-<n>/<sha>/` and upserts one PR comment that embeds them, with test totals and detector metrics. |
+| `ci.yml` | PR, push to `main` | **build-test:** JDK 25 and Gradle cache; `./gradlew lintDebug detekt testDebugUnitTest verifyRoborazziDebug assembleDebug`. Uploads the APK, JUnit and lint reports and Roborazzi screenshots, and writes a job summary. **emulator-e2e** (needs build-test): KVM plus `reactivecircus/android-emulator-runner` (API 34, ATD x86_64); `connectedDebugAndroidTest`, including the Replay e2e on fixtures; `adb screenrecord`; screenshots; logcat. Uploads all of these. **evidence-comment:** pushes PNG/GIF evidence to the `ci-evidence` branch under `pr-<n>/<sha>/` and upserts one PR comment that embeds them, with test totals and detector metrics. |
 | `detector-metrics.yml` | PR touching `audio/`, `vision/`, `testing/`; nightly | Runs the JVM replay harness on the synthetic and golden fixtures (and the full bucket set nightly, using a secret). Fails if a metric falls below its threshold in `testing/thresholds.json`. Posts a metrics table. |
 | `claude.yml` | `@claude` in an issue or PR comment, or issue labelled `agent:go` | `anthropics/claude-code-action` runs an agent that implements the issue, pushes a branch and opens a PR. Needs the `CLAUDE_CODE_OAUTH_TOKEN` (or `ANTHROPIC_API_KEY`) secret. |
 | `worker.yml` (F23) | PR touching `backend/` | `npm test` (vitest + miniflare). Runs `wrangler deploy` on main using the `CLOUDFLARE_API_TOKEN` secret. |
