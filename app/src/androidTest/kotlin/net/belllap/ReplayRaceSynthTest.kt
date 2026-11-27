@@ -3,10 +3,11 @@ package net.belllap
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertTextEquals
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.rule.GrantPermissionRule
 import net.belllap.core.log.EventLog
 import net.belllap.core.log.StateTransition
 import net.belllap.debug.ReplayTags
@@ -18,7 +19,11 @@ import org.junit.Test
 
 /** F24: replays race_synth (real MP4 decode, WAV source, state machine) from the debug menu and checks the log. */
 class ReplayRaceSynthTest {
-    @get:Rule
+    @get:Rule(order = 0)
+    val permissions: GrantPermissionRule =
+        GrantPermissionRule.grant(android.Manifest.permission.CAMERA, android.Manifest.permission.RECORD_AUDIO)
+
+    @get:Rule(order = 1)
     val composeRule = createAndroidComposeRule<MainActivity>()
 
     @Test
@@ -43,6 +48,7 @@ class ReplayRaceSynthTest {
      */
     @Test
     fun journeyAtRealTimeShowsEveryMode() {
+        TestEvidence.awaitPreviewContent { timeoutMs, condition -> composeRule.waitUntil(timeoutMs, condition) }
         TestEvidence.screenshot("10-journey-setup-with-debug-entry")
         composeRule.onNodeWithTag(ReplayTags.OPEN).performClick()
         composeRule.waitForIdle()
