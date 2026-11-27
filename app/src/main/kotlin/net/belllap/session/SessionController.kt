@@ -97,8 +97,9 @@ class SessionController(
     private fun afterChange(before: State, trigger: String) {
         val after = machine.state
         if (after != before) log.transition(before, after, trigger)
-        mutableState.value = after
+        // Sync the listener first, so anyone who sees the new state also sees the listener status that goes with it.
         syncListener()
+        mutableState.value = after
         timer?.cancel()
         timer = machine.nextDeadlineMs?.let { deadline ->
             scope.launch {

@@ -89,6 +89,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
 
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(project(":testing:fixtures"))
     testImplementation(libs.robolectric)
     testImplementation(libs.roborazzi)
