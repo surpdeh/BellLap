@@ -60,6 +60,7 @@ class MainActivity : ComponentActivity() {
                 val state by session.state.collectAsState()
                 val bell by session.bell.collectAsState()
                 LaunchedEffect(settings) { session.updateSettings(settings) }
+                val device by (application as BellLapApp).deviceCapabilities.collectAsState()
                 var capabilities by remember { mutableStateOf<CameraCapabilities?>(null) }
                 var mapping by remember { mutableStateOf(PreviewMapping()) }
                 var detectMessage by remember { mutableStateOf<String?>(null) }
@@ -78,7 +79,8 @@ class MainActivity : ComponentActivity() {
                     Box {
                         SetupScreen(
                             settings = settings,
-                            capabilities = capabilities,
+                            capabilities = device?.forFacing(settings.facing) ?: capabilities,
+                            facings = device?.facings(),
                             permission = permissionUi(granted, asked, rationale),
                             settingsOpen = settingsOpen,
                             onSettingsOpenChange = { settingsOpen = it },

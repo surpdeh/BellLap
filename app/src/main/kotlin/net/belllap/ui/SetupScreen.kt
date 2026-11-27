@@ -57,6 +57,7 @@ fun SetupScreen(
     onDetectLine: () -> Unit = {},
     detectMessage: String? = null,
     mode: String = "SETUP",
+    facings: Set<CameraFacing>? = null,
     mapping: PreviewMapping = PreviewMapping(),
     preview: @Composable () -> Unit = {},
 ) {
@@ -150,6 +151,7 @@ fun SetupScreen(
             SettingsOverlay(
                 settings = settings,
                 capabilities = capabilities,
+                facings = facings,
                 onChange = onSettingsChange,
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
@@ -238,6 +240,8 @@ fun SettingsOverlay(
     capabilities: CameraCapabilities?,
     onChange: (CaptureSettings) -> Unit,
     modifier: Modifier = Modifier,
+    /** Cameras the device has (F25), or null while the probe is pending. */
+    facings: Set<CameraFacing>? = null,
 ) {
     val resolutions = capabilities?.supportedResolutions()?.takeIf { it.isNotEmpty() }
     val timeoutRange = CaptureSettings.FLAG_TIMEOUT_RANGE_S
@@ -256,7 +260,7 @@ fun SettingsOverlay(
                 options = CameraFacing.entries,
                 selected = settings.facing,
                 label = { if (it == CameraFacing.BACK) "Back" else "Front" },
-                enabled = { true },
+                enabled = { facings == null || it in facings },
             ) { onChange(settings.copy(facing = it)) }
             Label("Resolution")
             Chips(

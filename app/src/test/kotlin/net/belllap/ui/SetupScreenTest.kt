@@ -3,6 +3,7 @@ package net.belllap.ui
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -14,6 +15,7 @@ import androidx.compose.ui.test.swipe
 import com.github.takahirom.roborazzi.captureRoboImage
 import net.belllap.core.model.BellSensitivity
 import net.belllap.core.model.CameraCapabilities
+import net.belllap.core.model.CameraFacing
 import net.belllap.core.model.CaptureSettings
 import net.belllap.core.model.FinishLine
 import net.belllap.core.model.NormPoint
@@ -47,9 +49,11 @@ class SetupScreenTest {
         onChange: (CaptureSettings) -> Unit = {},
         onLine: (FinishLine?) -> Unit = {},
         onStandby: () -> Unit = {},
+        facings: Set<CameraFacing>? = null,
     ) = SetupScreen(
         settings = settings,
         capabilities = caps,
+        facings = facings,
         permission = permission,
         settingsOpen = settingsOpen,
         onSettingsOpenChange = {},
@@ -78,6 +82,14 @@ class SetupScreenTest {
         composeRule.onNodeWithTag(TestTags.SETTINGS_OVERLAY).assertIsDisplayed()
         composeRule.onNodeWithTag("chip_60 fps").assertIsNotEnabled()
         composeRule.onNodeWithTag("chip_2160p").assertIsNotEnabled()
+    }
+
+    @Test
+    fun settingsOverlayOffersOnlyCamerasTheDeviceHas() {
+        composeRule.setContent { Screen(settingsOpen = true, facings = setOf(CameraFacing.BACK)) }
+
+        composeRule.onNodeWithTag("chip_Back").assertIsEnabled()
+        composeRule.onNodeWithTag("chip_Front").assertIsNotEnabled()
     }
 
     @Test

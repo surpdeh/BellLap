@@ -243,7 +243,8 @@ Setup and capture:
   - Metrics on fixtures: target recall ≥ 0.9 and < 0.2 false alarms per hour.
   - Done: `:audio:bell` cascade, `:audio:android` (AudioRecord + LiteRT YAMNet), STANDBY screen. A train of ≥ 4 clean strikes in 3 s fires without YAMNet, because YAMNet misses a bell in loud noise. Tier 3 (a real bell on a phone) is still open.
 - [ ] **F15 Alert player:** ([#14](https://github.com/surpdeh/belllap/issues/14)) armed beep series at +10 s, beep per finisher and stand-down chime, all at maximum volume through the alarm stream. Volume is restored afterwards.
-- [ ] **F25 Device capability probe:** ([#15](https://github.com/surpdeh/belllap/issues/15)) dumps camera hardware level, fps ranges, supported session configurations and audio sources. Included in bug reports.
+- [x] **F25 Device capability probe:** ([#15](https://github.com/surpdeh/belllap/issues/15)) dumps camera hardware level, fps ranges, supported session configurations and audio sources. Included in bug reports.
+  - Done: `DeviceProbe` (`:capture`) reads Camera2 (hardware level, AE fps ranges, per-use-case sizes with max fps, high-speed sizes), audio sources and AVC/HEVC/AAC encoders into the pure `DeviceCapabilities` (`:core:model`). The app writes `logs/device-capabilities.json` beside the event logs at start, so a bug report that bundles the logs includes it. The debug build has a **Device (debug)** screen. Settings gate the camera, resolution and fps chips on the probe. Use-case sets are PREVIEW+ANALYSIS (gating), and the VIDEO sizes for F17. Tier 3 (real phones) is still open.
 
 Detection and recording:
 
