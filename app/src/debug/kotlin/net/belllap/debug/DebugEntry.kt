@@ -94,7 +94,11 @@ private fun ReplayScreen(onClose: () -> Unit) {
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Switch(fast, { fast = it }, enabled = !controller.running, modifier = Modifier.testTag(ReplayTags.SPEED))
-            Text(if (fast) "As fast as possible" else "Real time", color = Color.White, modifier = Modifier.padding(8.dp))
+            Text(
+                if (fast) "As fast as possible" else "Real time",
+                color = Color.White,
+                modifier = Modifier.padding(8.dp),
+            )
         }
         Button(
             onClick = { scope.launch { controller.replay({ ReplayFixtures.raceSynth(context.replayDir()) }, speed) } },
@@ -105,7 +109,9 @@ private fun ReplayScreen(onClose: () -> Unit) {
             OutlinedButton({ pickVideo.launch(arrayOf("video/*")) }, Modifier.testTag(ReplayTags.PICK_VIDEO)) {
                 Text(if (video == null) "Pick MP4" else "MP4 picked")
             }
-            OutlinedButton({ pickAudio.launch(arrayOf("audio/*", "application/octet-stream")) }, Modifier.testTag(ReplayTags.PICK_AUDIO)) {
+            OutlinedButton({
+                pickAudio.launch(arrayOf("audio/*", "application/octet-stream"))
+            }, Modifier.testTag(ReplayTags.PICK_AUDIO)) {
                 Text(if (audio == null) "Pick WAV" else "WAV picked")
             }
         }
@@ -119,7 +125,9 @@ private fun ReplayScreen(onClose: () -> Unit) {
             modifier = Modifier.testTag(ReplayTags.RUN_FILES),
         ) { Text("Replay picked files (no detectors)") }
         LazyColumn(Modifier.weight(1f).testTag(ReplayTags.LOG)) {
-            items(controller.lines.toList()) { Text(it, color = Color.White, style = MaterialTheme.typography.bodySmall) }
+            items(
+                controller.lines.toList(),
+            ) { Text(it, color = Color.White, style = MaterialTheme.typography.bodySmall) }
         }
         OutlinedButton(onClose, Modifier.testTag(ReplayTags.CLOSE)) { Text("Close") }
     }

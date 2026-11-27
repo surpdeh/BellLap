@@ -75,7 +75,10 @@ object Mp4Encoder {
     private fun fill(image: android.media.Image, f: Frame) {
         val y = image.planes[0]
         for (row in 0 until f.height) {
-            for (col in 0 until f.width) y.buffer.put(row * y.rowStride + col * y.pixelStride, f.luma[row * f.stride + col])
+            for (col in 0 until f.width) y.buffer.put(
+                row * y.rowStride + col * y.pixelStride,
+                f.luma[row * f.stride + col],
+            )
         }
         for (p in 1..2) {
             val plane = image.planes[p]

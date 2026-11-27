@@ -34,8 +34,47 @@ class ReplayRaceSynthTest {
         Thread.sleep(HOLD_MS)
         TestEvidence.screenshot("02-replay-race-synth-done")
 
+        assertEquals("replay events in events.jsonl", expectedSequence(), replayedTransitions())
+    }
+
+    /**
+     * The user journey at real time, so the recording and screenshots show the debug menu and each session
+     * mode as it happens: menu, ARMING after the bell, ARMED, ACQUISITION on the flag, crossings, done.
+     */
+    @Test
+    fun journeyAtRealTimeShowsEveryMode() {
+        TestEvidence.screenshot("10-journey-setup-with-debug-entry")
+        composeRule.onNodeWithTag(ReplayTags.OPEN).performClick()
+        composeRule.waitForIdle()
+        TestEvidence.screenshot("11-journey-replay-menu")
+
+        composeRule.onNodeWithTag(ReplayTags.SPEED).performClick() // fast -> real time
+        composeRule.waitForIdle()
+        TestEvidence.screenshot("12-journey-real-time-selected")
+
+        composeRule.onNodeWithTag(ReplayTags.RUN_RACE_SYNTH).performClick()
+        for ((mode, shot) in listOf(
+            "STANDBY" to "13-journey-standby",
+            "ARMING" to "14-journey-arming-after-bell",
+            "ARMED" to "15-journey-armed",
+            "ACQUISITION" to "16-journey-acquisition-flag",
+        )) {
+            composeRule.waitUntil(MODE_TIMEOUT_MS) { textOf(ReplayTags.STATE) == mode }
+            composeRule.waitForIdle()
+            TestEvidence.screenshot(shot)
+        }
+        composeRule.waitUntil(TIMEOUT_MS) { statusText().let { it.startsWith("Done") || it.startsWith("Failed") } }
+        assertTrue("Replay did not complete: ${statusText()}", statusText().startsWith("Done"))
+        composeRule.onNodeWithTag(ReplayTags.STATE).assertTextEquals("SETUP")
+        composeRule.waitForIdle()
+        Thread.sleep(HOLD_MS)
+        TestEvidence.screenshot("17-journey-done-event-list")
+        assertEquals("replay events in events.jsonl", expectedSequence(), replayedTransitions())
+    }
+
+    private fun expectedSequence(): List<String> {
         val crossings = Fixtures.race().labels.crossings.size
-        val expected = listOf(
+        return listOf(
             "SETUP>STANDBY:StandbyRequested",
             "STANDBY>ARMING:BellDetected",
             "ARMING>ARMED:ArmDelayElapsed",
@@ -45,11 +84,12 @@ class ReplayRaceSynthTest {
             "ACQUISITION>ARMED:Stop",
             "ARMED>SETUP:Stop",
         )
-        assertEquals("replay events in events.jsonl", expected, replayedTransitions())
     }
 
-    private fun statusText(): String =
-        composeRule.onNodeWithTag(ReplayTags.STATUS).fetchSemanticsNode().config
+    private fun statusText(): String = textOf(ReplayTags.STATUS)
+
+    private fun textOf(tag: String): String =
+        composeRule.onNodeWithTag(tag).fetchSemanticsNode().config
             .getOrNull(SemanticsProperties.Text)?.joinToString { it.text }.orEmpty()
 
     /** The newest run of replay transitions (those carrying a PTS) in the app's event log. */
@@ -67,6 +107,7 @@ class ReplayRaceSynthTest {
 
     private companion object {
         const val TIMEOUT_MS = 180_000L
+        const val MODE_TIMEOUT_MS = 90_000L
         const val HOLD_MS = 2_000L
     }
 }

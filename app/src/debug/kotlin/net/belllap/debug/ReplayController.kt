@@ -55,7 +55,9 @@ class ReplayController(private val eventLog: EventLog) {
         override fun onTransition(from: State, to: State, trigger: String, ptsNs: Long) {
             current = to
             eventLog.transition(from.label(), to.label(), trigger, ptsNs)
-            post("${"%.1f".format(ptsNs / NS_PER_S)}s  ${from.label()} > ${to.label()}  $trigger") { stateLabel = to.label() }
+            post(
+                "${"%.1f".format(ptsNs / NS_PER_S)}s  ${from.label()} > ${to.label()}  $trigger",
+            ) { stateLabel = to.label() }
         }
 
         override fun onEffect(effect: Effect, ptsNs: Long) {
