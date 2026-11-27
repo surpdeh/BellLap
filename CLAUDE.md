@@ -31,5 +31,5 @@ BellLap is an Android app (Kotlin, Compose, CameraX) that tracks the finishing o
 
 ## Environment
 
-- The Android SDK is at `$ANDROID_HOME` (`/opt/android-sdk`), installed by the belllap cloud environment's setup script. JDK 21.
+- The Android SDK is at `$ANDROID_HOME` (`/opt/android-sdk`), installed by the belllap cloud environment's setup script. JDK 25 toolchain (latest LTS); bytecode stays at Java 21 so D8 output is unchanged for minSdk 29.
 - There is no emulator in the cloud container because there is no KVM. Emulator tests run in GitHub Actions (`.github/workflows/ci.yml`).

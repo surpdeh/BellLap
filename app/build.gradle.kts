@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.roborazzi)
 }
@@ -33,7 +32,7 @@ android {
 
 androidComponents {
     beforeVariants(selector().withBuildType("release")) { variant ->
-        variant.enableUnitTest = false
+        variant.hostTests[com.android.build.api.variant.HostTestBuilder.UNIT_TEST_TYPE]?.enable = false
     }
 }
 
