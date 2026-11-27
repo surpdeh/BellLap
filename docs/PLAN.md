@@ -216,7 +216,7 @@ Each feature becomes one GitHub issue, `[Fxx] Title`, with acceptance criteria a
   - Pure-Kotlin reducer for SETUP, STANDBY, ARMING, ARMED, ACQUISITION and REVIEW, with manual overrides and timeouts.
   - Exhaustive unit tests using virtual time.
   - Optional TLA+ check of the core properties (pstack `/create-formal-verification-skill`).
-- [ ] **F05 Event log and tracing:** ([#7](https://github.com/surpdeh/belllap/issues/7))
+- [x] **F05 Event log and tracing:** ([#7](https://github.com/surpdeh/belllap/issues/7))
   - A JSONL structured event log of state transitions, detector scores and device info.
   - A Timber rolling file tree.
   - `ApplicationExitInfo` capture.
