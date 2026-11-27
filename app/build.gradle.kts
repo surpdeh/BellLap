@@ -48,6 +48,8 @@ dependencies {
     implementation(project(":capture"))
     implementation(libs.androidx.camera.compose)
     implementation(libs.androidx.datastore.preferences)
+    debugImplementation(project(":core:replay"))
+    debugImplementation(project(":testing:fixtures"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.ui)
@@ -68,4 +70,5 @@ dependencies {
     androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(project(":core:log"))
 }
