@@ -10,6 +10,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import net.belllap.core.log.EventLog
 import net.belllap.core.log.StateTransition
+import net.belllap.debug.ReplayController
 import net.belllap.debug.ReplayTags
 import net.belllap.testing.fixtures.Fixtures
 import org.junit.Assert.assertEquals
@@ -59,6 +60,7 @@ class ReplayRaceSynthTest {
         TestEvidence.screenshot("12-journey-real-time-selected")
 
         composeRule.onNodeWithTag(ReplayTags.RUN_RACE_SYNTH).performClick()
+        composeRule.waitUntil(PREPARE_TIMEOUT_MS) { statusText() != ReplayController.PREPARING }
         for ((mode, shot) in listOf(
             "STANDBY" to "13-journey-standby",
             "ARMING" to "14-journey-arming-after-bell",
@@ -91,9 +93,14 @@ class ReplayRaceSynthTest {
         )
     }
 
-    /** Waits for Done or Failed. On a timeout, keeps a screenshot and reports what the screen said. */
+    /**
+     * Waits for Done or Failed. Preparing the media (generating and encoding race_synth on a cold cache) gets its
+     * own budget, because on the CI emulator it alone has taken over two minutes. On a timeout, keeps a screenshot
+     * and reports what the screen said.
+     */
     private fun awaitReplayFinished() {
         try {
+            composeRule.waitUntil(PREPARE_TIMEOUT_MS) { statusText() != ReplayController.PREPARING }
             composeRule.waitUntil(TIMEOUT_MS) { statusText().let { it.startsWith("Done") || it.startsWith("Failed") } }
         } catch (e: androidx.compose.ui.test.ComposeTimeoutException) {
             runCatching { TestEvidence.screenshot("replay-timeout") }
@@ -122,6 +129,7 @@ class ReplayRaceSynthTest {
     }
 
     private companion object {
+        const val PREPARE_TIMEOUT_MS = 300_000L
         const val TIMEOUT_MS = 180_000L
         const val MODE_TIMEOUT_MS = 90_000L
         const val HOLD_MS = 2_000L
