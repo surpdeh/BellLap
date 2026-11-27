@@ -44,13 +44,20 @@ fun replayRealMain(args: Array<String>) {
         )
         return
     }
-    val metrics = ReplayRunner.run(root, names)
+    val stage1 = Stage1.fromSystemProperties()
+    val metrics = ReplayRunner.run(root, names, stage1)
+    println("bell stage 1: ${stage1.label}")
+    if (stage1 is Stage1.Dump) return
+    File(outDir, "real-bell-trace.csv").writeText(
+        (listOf("fixture,event,pts_ms,detail") + ReplayRunner.bellTrace).joinToString("\n", postfix = "\n"),
+    )
     file.writeText(
         PRETTY.encodeToString(
             JsonObject.serializer(),
             buildJsonObject {
                 put("schemaVersion", 1)
                 put("status", "ran")
+                put("bellStage1", stage1.label)
                 put("fixtures", JsonArray(names.map(::JsonPrimitive)))
                 put("metrics", buildJsonObject { metrics.forEach { (k, v) -> put(k, v) } })
             },
