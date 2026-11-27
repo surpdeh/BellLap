@@ -1,6 +1,6 @@
 # Replay mode
 
-Status: **RP-1 and RP-2 implemented (F03)**. RP-3 and RP-4 need Replay mode (F24) and are **not implemented yet**. `:testing:harness:replay` replays the synthetic fixtures through baseline detectors; the real detectors replace them later.
+Status: **RP-1 and RP-2 implemented (F03)**. RP-3 and RP-4 need Replay mode (F24) and are **not implemented yet**. `:testing:harness:replay` replays the synthetic fixtures through the F14 bell cascade and the baseline flag and crossing detectors, which F16 and F18 will replace. Bell metrics are per bell lap; see [bell-detection](./bell-detection.md).
 
 Replay runs the whole pipeline (state machine and detectors) on a chosen MP4 and WAV instead of the camera and microphone. It is the main way to verify on the emulator.
 
