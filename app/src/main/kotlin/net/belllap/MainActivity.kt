@@ -2,13 +2,18 @@ package net.belllap
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
+import android.Manifest
+import android.view.WindowManager
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -22,10 +27,16 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.launch
 import net.belllap.core.model.CameraCapabilities
 import net.belllap.core.model.CaptureSettings
+import net.belllap.core.service.SessionForegroundService
+import net.belllap.core.service.dimmedStandby
 import net.belllap.settings.SettingsRepository
 import net.belllap.ui.CameraPreview
+import net.belllap.ui.OEM_TIPS_URL
+import net.belllap.ui.OnboardingScreen
+import net.belllap.ui.OnboardingStatus
 import net.belllap.ui.REQUIRED_PERMISSIONS
 import net.belllap.ui.SetupScreen
+import net.belllap.ui.StandbyScreen
 import net.belllap.ui.permissionUi
 
 private val android.content.Context.settingsStore by preferencesDataStore("capture_settings")
@@ -37,6 +48,26 @@ class MainActivity : ComponentActivity() {
 
     private fun shouldShowRationale() =
         REQUIRED_PERMISSIONS.any { ActivityCompat.shouldShowRequestPermissionRationale(this, it) }
+
+    private fun notificationsGranted() = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+        ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
+        android.content.pm.PackageManager.PERMISSION_GRANTED
+
+    private fun batteryExempt() =
+        getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName)
+
+    /** Black UI, screen kept on, brightness about 0.01 while in standby; restored otherwise. */
+    private fun applyDimming(dimmed: Boolean) {
+        val attrs = window.attributes
+        attrs.screenBrightness =
+            if (dimmed) DIMMED_BRIGHTNESS else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+        window.attributes = attrs
+        if (dimmed) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,6 +86,43 @@ class MainActivity : ComponentActivity() {
                     granted = allGranted()
                     rationale = shouldShowRationale()
                 }
+                var onboarded by rememberSaveable { mutableStateOf(false) }
+                var notifications by remember { mutableStateOf(notificationsGranted()) }
+                var battery by remember { mutableStateOf(batteryExempt()) }
+                val notifLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+                    notifications = notificationsGranted()
+                }
+                val batteryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+                    battery = batteryExempt()
+                }
+                val sessionState by SessionForegroundService.state.collectAsState()
+                val dimmed = dimmedStandby(sessionState)
+                LaunchedEffect(dimmed) { applyDimming(dimmed) }
+                if (dimmed) {
+                    StandbyScreen(
+                        onBellNow = { SessionForegroundService.bellNow(this@MainActivity) },
+                        onStop = { SessionForegroundService.stop(this@MainActivity) },
+                    )
+                    return@MaterialTheme
+                }
+                if (!onboarded && !(granted && notifications && battery)) {
+                    OnboardingScreen(
+                        status = OnboardingStatus(notifications, granted, battery),
+                        onRequestNotifications = {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            }
+                        },
+                        onRequestCameraMic = { launcher.launch(REQUIRED_PERMISSIONS) },
+                        onRequestBatteryExemption = {
+                            val uri = Uri.fromParts("package", packageName, null)
+                            batteryLauncher.launch(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, uri))
+                        },
+                        onOpenOemTips = { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(OEM_TIPS_URL))) },
+                        onContinue = { onboarded = true },
+                    )
+                    return@MaterialTheme
+                }
                 SetupScreen(
                     settings = settings,
                     capabilities = capabilities,
@@ -62,6 +130,8 @@ class MainActivity : ComponentActivity() {
                     settingsOpen = settingsOpen,
                     onSettingsOpenChange = { settingsOpen = it },
                     onSettingsChange = { new -> scope.launch { repo.update { new } } },
+                    mode = sessionState::class.simpleName.orEmpty().uppercase(),
+                    onStartStandby = { SessionForegroundService.startStandby(this@MainActivity) },
                     onRequestPermissions = { launcher.launch(REQUIRED_PERMISSIONS) },
                     onOpenSystemSettings = {
                         val uri = Uri.fromParts("package", packageName, null)
@@ -77,5 +147,9 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    private companion object {
+        const val DIMMED_BRIGHTNESS = 0.01f
     }
 }

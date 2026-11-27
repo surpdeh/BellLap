@@ -46,6 +46,7 @@ fun SetupScreen(
     onOpenSystemSettings: () -> Unit,
     modifier: Modifier = Modifier,
     mode: String = "SETUP",
+    onStartStandby: () -> Unit = {},
     preview: @Composable () -> Unit = {},
 ) {
     Box(
@@ -75,6 +76,16 @@ fun SetupScreen(
                     .padding(16.dp)
                     .testTag(TestTags.SETTINGS_BUTTON),
             ) { Text(if (settingsOpen) "Close" else "Settings") }
+        }
+        if (permission == PermissionUi.GRANTED && !settingsOpen) {
+            Button(
+                onClick = onStartStandby,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
+                    .padding(16.dp)
+                    .testTag(TestTags.START_STANDBY_BUTTON),
+            ) { Text("Start standby") }
         }
         if (settingsOpen && permission == PermissionUi.GRANTED) {
             SettingsOverlay(

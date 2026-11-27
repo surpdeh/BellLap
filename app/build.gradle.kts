@@ -46,6 +46,8 @@ dependencies {
     implementation(project(":core:log"))
     implementation(project(":core:model"))
     implementation(project(":capture"))
+    implementation(project(":core:service"))
+    implementation(project(":core:statemachine"))
     implementation(libs.androidx.camera.compose)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.core.ktx)
