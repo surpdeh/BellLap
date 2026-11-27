@@ -24,9 +24,25 @@ object TestEvidence {
         val bitmap = checkNotNull(InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()) {
             "UiAutomation.takeScreenshot() returned null"
         }
+        check(!bitmap.isBlack()) {
+            "Screenshot '$name' is entirely black: display off, locked, or a headless emulator image"
+        }
         val file = File(directory(), "$name.png")
         FileOutputStream(file).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
         Log.i(TAG, "Saved ${file.absolutePath}")
         return file
     }
+
+    private fun Bitmap.isBlack(): Boolean {
+        val step = SAMPLE_STEP
+        for (y in 0 until height step step) {
+            for (x in 0 until width step step) {
+                if (getPixel(x, y) and RGB_MASK != 0) return false
+            }
+        }
+        return true
+    }
+
+    private const val SAMPLE_STEP = 16
+    private const val RGB_MASK = 0x00FFFFFF
 }

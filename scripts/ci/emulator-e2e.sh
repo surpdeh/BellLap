@@ -4,6 +4,11 @@
 set -uo pipefail
 mkdir -p evidence
 
+# Make sure the display is on and unlocked, otherwise screenshots and recordings are black.
+adb shell svc power stayon true || true
+adb shell input keyevent KEYCODE_WAKEUP || true
+adb shell wm dismiss-keyguard || true
+
 adb logcat -c || true
 adb shell screenrecord --time-limit 180 /data/local/tmp/e2e.mp4 &
 REC_PID=$!
