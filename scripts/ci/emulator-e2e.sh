@@ -8,6 +8,9 @@ mkdir -p evidence
 adb shell svc power stayon true || true
 adb shell input keyevent KEYCODE_WAKEUP || true
 adb shell wm dismiss-keyguard || true
+# The software-rendered emulator makes Pixel Launcher miss its ANR deadline; keep that dialog off screen.
+adb shell settings put global hide_error_dialogs 1 || true
+adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS || true
 
 adb logcat -c || true
 adb shell screenrecord --time-limit 180 /data/local/tmp/e2e.mp4 &

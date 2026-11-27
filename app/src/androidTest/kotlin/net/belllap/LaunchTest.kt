@@ -23,6 +23,7 @@ class LaunchTest {
         composeRule.onNodeWithTag(TestTags.SETUP_SCREEN).assertIsDisplayed()
         composeRule.onNodeWithTag(TestTags.STATUS_MODE).assertTextEquals("SETUP")
         composeRule.waitForIdle()
+        TestEvidence.awaitPreviewContent()
         // Hold the screen briefly so the screen recording captures it.
         Thread.sleep(HOLD_MS)
         val shot = TestEvidence.screenshot("01-setup-launch")
