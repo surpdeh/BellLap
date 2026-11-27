@@ -34,22 +34,24 @@ object TestEvidence {
     }
 
     /**
-     * Polls screenshots until the middle band of the screen (where the camera preview sits, clear of
-     * the overlays) has visible content. Fails if the preview never renders within [timeoutMs].
+     * Waits until the middle band of the screen (where the camera preview sits, clear of the overlays)
+     * has visible content. [waitUntil] must pump the Compose test clock, for example
+     * `composeRule::waitUntil`: the v2 rule runs coroutines on a StandardTestDispatcher, so a plain
+     * sleep loop would starve the camera bind that produces the preview.
+     * Fails if the preview never renders within [timeoutMs].
      */
-    fun awaitPreviewContent(timeoutMs: Long = PREVIEW_TIMEOUT_MS) {
+    fun awaitPreviewContent(
+        timeoutMs: Long = PREVIEW_TIMEOUT_MS,
+        waitUntil: (timeoutMs: Long, condition: () -> Boolean) -> Unit,
+    ) {
         val uiAutomation = InstrumentationRegistry.getInstrumentation().uiAutomation
-        val deadline = System.currentTimeMillis() + timeoutMs
-        while (true) {
-            val bitmap = uiAutomation.takeScreenshot()
-            if (bitmap != null && bitmap.middleBandHasContent()) return
-            if (System.currentTimeMillis() >= deadline) {
-                // Keep what the screen showed, so the evidence explains the failure.
-                runCatching { screenshot("preview-timeout") }
-                logBlockedThreads()
-                error("Camera preview never rendered within ${timeoutMs}ms")
-            }
-            Thread.sleep(POLL_MS)
+        try {
+            waitUntil(timeoutMs) { uiAutomation.takeScreenshot()?.middleBandHasContent() == true }
+        } catch (e: Throwable) {
+            // Keep what the screen showed, so the evidence explains the failure.
+            runCatching { screenshot("preview-timeout") }
+            logBlockedThreads()
+            throw IllegalStateException("Camera preview never rendered within ${timeoutMs}ms", e)
         }
     }
 
@@ -87,7 +89,6 @@ object TestEvidence {
     private const val MAX_STACK_FRAMES = 25
     private const val RGB_MASK = 0x00FFFFFF
     private const val PREVIEW_TIMEOUT_MS = 30_000L
-    private const val POLL_MS = 500L
     private const val BAND_START = 0.3f
     private const val BAND_END = 0.7f
     private const val CONTENT_THRESHOLD = 24
