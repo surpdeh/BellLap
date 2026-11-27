@@ -5,6 +5,7 @@ object TestTags {
     const val STATUS_OVERLAY = "status_overlay"
     const val STATUS_MODE = "status_mode"
     const val CAMERA_PREVIEW_PLACEHOLDER = "camera_preview_placeholder"
+    const val CAMERA_ERROR = "camera_error"
     const val SETTINGS_BUTTON = "settings_button"
     const val SETTINGS_OVERLAY = "settings_overlay"
     const val PERMISSION_RATIONALE = "permission_rationale"

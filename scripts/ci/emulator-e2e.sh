@@ -38,7 +38,12 @@ adb shell run-as net.belllap.debug cat files/logs/events.jsonl > evidence/events
 adb logcat -d > evidence/logcat.txt || true
 # Surface the useful lines in the job log (the artifact is not always reachable).
 echo "== logcat excerpt: crashes, camera and test failures =="
-grep -E "FATAL EXCEPTION|AndroidRuntime|TestRunner|CameraX|Camera2CameraImpl|CameraManager|CameraService|net\.belllap" evidence/logcat.txt | tail -120 || true
+grep -E "FATAL EXCEPTION|AndroidRuntime|TestRunner:.*(failed|Exception)" evidence/logcat.txt | cut -c1-260 | head -20 || true
+echo "-- camera lines (first 60) --"
+grep -E "CameraX|CameraValidator|Camera2CameraImpl|CameraManager|CameraService|BellLap|Camera preview" evidence/logcat.txt | grep -vE "AppsFilter|WindowManager|Transition" | cut -c1-260 | head -60 || true
+echo "-- camera features and services --"
+adb shell pm list features | grep -i camera || echo "no camera feature reported"
+adb shell dumpsys media.camera | head -15 || true
 echo "== end logcat excerpt =="
 
 command -v ffmpeg >/dev/null || echo "WARN: ffmpeg not found, no GIF"

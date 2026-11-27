@@ -15,12 +15,35 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import net.belllap.core.model.CameraCapabilities
 import net.belllap.core.model.CameraFacing
 import net.belllap.core.model.CaptureSettings
+import java.util.concurrent.ExecutionException
 import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+
+/** The camera could not be initialised or bound (no camera, init failure, in use). */
+class CameraUnavailableException(message: String, cause: Throwable) : Exception(message, cause)
 
 /** Binds a CameraX Preview for [settings]; used by the setup screen for tripod alignment. */
 object PreviewSession {
-    /** Binds the preview and returns the probed capabilities of the chosen camera. */
+    /**
+     * Binds the preview and returns the probed capabilities of the chosen camera.
+     * Throws [CameraUnavailableException] when the camera cannot be initialised or bound.
+     */
     suspend fun bind(
+        context: Context,
+        owner: LifecycleOwner,
+        settings: CaptureSettings,
+        onSurfaceRequest: (SurfaceRequest) -> Unit,
+    ): CameraCapabilities = try {
+        bindOrThrow(context, owner, settings, onSurfaceRequest)
+    } catch (e: ExecutionException) {
+        throw CameraUnavailableException("Camera failed to initialise: ${e.cause?.message ?: e.message}", e)
+    } catch (e: IllegalArgumentException) {
+        throw CameraUnavailableException("No matching camera: ${e.message}", e)
+    } catch (e: IllegalStateException) {
+        throw CameraUnavailableException("Camera could not be bound: ${e.message}", e)
+    }
+
+    private suspend fun bindOrThrow(
         context: Context,
         owner: LifecycleOwner,
         settings: CaptureSettings,
@@ -53,6 +76,16 @@ object PreviewSession {
     private suspend fun awaitProvider(context: Context): ProcessCameraProvider =
         suspendCancellableCoroutine { cont ->
             val future = ProcessCameraProvider.getInstance(context)
-            future.addListener({ cont.resume(future.get()) }, ContextCompat.getMainExecutor(context))
+            future.addListener(
+                {
+                    // Guava swallows listener exceptions, so resume the coroutine explicitly on failure.
+                    try {
+                        cont.resume(future.get())
+                    } catch (e: ExecutionException) {
+                        cont.resumeWithException(e)
+                    }
+                },
+                ContextCompat.getMainExecutor(context),
+            )
         }
 }
