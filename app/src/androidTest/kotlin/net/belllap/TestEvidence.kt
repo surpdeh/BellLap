@@ -43,7 +43,11 @@ object TestEvidence {
         while (true) {
             val bitmap = uiAutomation.takeScreenshot()
             if (bitmap != null && bitmap.middleBandHasContent()) return
-            check(System.currentTimeMillis() < deadline) { "Camera preview never rendered within ${timeoutMs}ms" }
+            if (System.currentTimeMillis() >= deadline) {
+                // Keep what the screen showed, so the evidence explains the failure.
+                runCatching { screenshot("preview-timeout") }
+                error("Camera preview never rendered within ${timeoutMs}ms")
+            }
             Thread.sleep(POLL_MS)
         }
     }

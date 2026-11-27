@@ -36,6 +36,10 @@ for f in $(adb shell run-as "$APP" ls files/evidence 2>/dev/null | tr -d '\r'); 
 done
 adb shell run-as net.belllap.debug cat files/logs/events.jsonl > evidence/events.jsonl 2>/dev/null || true
 adb logcat -d > evidence/logcat.txt || true
+# Surface the useful lines in the job log (the artifact is not always reachable).
+echo "== logcat excerpt: crashes, camera and test failures =="
+grep -E "FATAL EXCEPTION|AndroidRuntime|TestRunner|CameraX|Camera2CameraImpl|CameraManager|CameraService|net\.belllap" evidence/logcat.txt | tail -120 || true
+echo "== end logcat excerpt =="
 
 command -v ffmpeg >/dev/null || echo "WARN: ffmpeg not found, no GIF"
 if command -v ffmpeg >/dev/null && [ -s evidence/e2e.mp4 ]; then
