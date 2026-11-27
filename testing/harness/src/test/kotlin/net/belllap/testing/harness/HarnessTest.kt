@@ -48,17 +48,44 @@ class HarnessTest {
     }
 
     @Test
-    fun bellDetectorIgnoresNoiseOnlyAudioAndDistractors() {
-        val f = Fixtures.bell(10, distractors = true)
+    fun bellEpisodesGroupStrikesAndMatchOneDetectionEach() {
+        val s = 1_000 * ms
+        val strikes = listOf(8 * s, 8 * s + 300 * ms, 8 * s + 700 * ms, 17 * s, 17 * s + 400 * ms)
+        assertEquals(listOf(8 * s, 17 * s), BellMetrics.episodes(strikes))
+        // One detection per bell lap, a duplicate, and a stray one far from any bell.
+        val r = BellMetrics.score(strikes, listOf(9 * s, 9 * s + 500 * ms, 17 * s + 800 * ms, 40 * s))
+        assertEquals(2, r.episodes)
+        assertEquals(2, r.matched)
+        assertEquals(2, r.falseAlarms)
+        assertEquals(listOf(1 * s, 800 * ms), r.latenciesNs)
+        // A detection before the bell starts does not count for it.
+        assertEquals(0, BellMetrics.score(strikes.take(1), listOf(7 * s)).matched)
+    }
+
+    @Test
+    fun bellCascadeFindsEveryBellLapInTheRaceAndNothingInDistractors() {
+        val f = Fixtures.race()
         val audio = f.audio!!
-        // Cut the audio to the stretch before the first bell onset: only noise and distractors remain.
-        val cut = (f.labels.bellOnsetsNs.first() / 1e9 * audio.sampleRate).toInt() - 16_000
-        val detector = BaselineBellDetector(audio.sampleRate)
-        runBlocking {
-            PcmAudioSource(audio.samples.copyOf(cut), audio.sampleRate, 20).chunks().toList()
-        }.forEach(detector::accept)
-        assertTrue(f.labels.distractors.any { it.startNs / 1e9 * audio.sampleRate < cut })
-        assertEquals(emptyList<Long>(), detector.onsetsNs)
+        val run = BellRun(Stage1.Off)
+        runBlocking { PcmAudioSource(audio.samples, audio.sampleRate, 20).chunks().toList() }.forEach(run::accept)
+        val r = BellMetrics.score(f.labels.bellOnsetsNs, run.detectionsNs)
+        assertEquals(1, r.matched)
+        assertEquals(0, r.falseAlarms)
+        assertTrue(r.latenciesNs.single() <= 1_500 * ms)
+    }
+
+    @Test
+    fun windowKeysAreStableAndPrecomputedScoresUseTheBellFamily() {
+        val w = FloatArray(15_600) { (it % 7) / 10f }
+        assertEquals(Stage1.windowKey(w), Stage1.windowKey(w.copyOf()))
+        assertTrue(Stage1.windowKey(w) != Stage1.windowKey(w.copyOf().also { it[0] = 1f }))
+        val file = kotlin.io.path.createTempFile(suffix = ".json").toFile()
+        file.writeText(
+            """{"labels": ["Speech", "Bell", "Chime"], "scores": {"${Stage1.windowKey(w)}": [0.9, 0.2, 0.4]}}""",
+        )
+        val classifier = Stage1.Precomputed(file).classifier()
+        assertEquals(0.4f, classifier.bellScore(w), 0f)
+        file.delete()
     }
 
     @Test
