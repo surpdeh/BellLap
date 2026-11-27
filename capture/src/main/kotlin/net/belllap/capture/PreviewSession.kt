@@ -1,6 +1,7 @@
 package net.belllap.capture
 
 import android.content.Context
+import android.util.Log
 import android.util.Range
 import android.util.Size
 import androidx.camera.core.CameraSelector
@@ -18,6 +19,8 @@ import net.belllap.core.model.CaptureSettings
 import java.util.concurrent.ExecutionException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+
+private const val TAG = "BellLapCamera"
 
 /** The camera could not be initialised or bound (no camera, init failure, in use). */
 class CameraUnavailableException(message: String, cause: Throwable) : Exception(message, cause)
@@ -49,7 +52,9 @@ object PreviewSession {
         settings: CaptureSettings,
         onSurfaceRequest: (SurfaceRequest) -> Unit,
     ): CameraCapabilities {
+        Log.i(TAG, "bind: awaiting provider for ${settings.facing} ${settings.resolution} ${settings.fps}")
         val provider = awaitProvider(context)
+        Log.i(TAG, "bind: provider ready, cameras=${provider.availableCameraInfos.size}")
         val selector = if (settings.facing == CameraFacing.FRONT) {
             CameraSelector.DEFAULT_FRONT_CAMERA
         } else {
@@ -67,9 +72,15 @@ object PreviewSession {
             .setResolutionSelector(resolution)
             .setTargetFrameRate(Range(settings.fps.value, settings.fps.value))
             .build()
-            .also { it.setSurfaceProvider(ContextCompat.getMainExecutor(context), onSurfaceRequest) }
+            .also {
+                it.setSurfaceProvider(ContextCompat.getMainExecutor(context)) { request ->
+                    Log.i(TAG, "surface requested: ${request.resolution}")
+                    onSurfaceRequest(request)
+                }
+            }
         provider.unbindAll()
         val camera = provider.bindToLifecycle(owner, selector, preview)
+        Log.i(TAG, "bind: bound, cameraId=${camera.cameraInfo}")
         return probeCapabilities(camera.cameraInfo)
     }
 
