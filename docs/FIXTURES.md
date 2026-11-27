@@ -25,7 +25,9 @@ scripts/fixtures/fetch.sh            # into testing/fixtures/real/ (gitignored)
 
 - Without credentials the script prints `SKIPPED` and exits 0.
 - With no fixtures present, `replayReal` writes `build/reports/real-metrics.json` with `"status": "skipped"`. Treat that as **inconclusive**, never as a pass.
-- The nightly workflow `nightly-real-metrics.yml` uses repository secrets `FIXTURES_S3_BUCKET`, `FIXTURES_S3_ENDPOINT`, `FIXTURES_S3_ACCESS_KEY_ID` and `FIXTURES_S3_SECRET_ACCESS_KEY`. A read-only bucket key is enough.
+- The nightly workflow `nightly-real-metrics.yml` reads two repository **variables** (Settings → Secrets and variables → Actions → Variables) and two repository **secrets**:
+  - variables, not secret, so they are visible in the settings: `FIXTURES_S3_BUCKET` (`belllap-fixtures`) and `FIXTURES_S3_ENDPOINT` (`https://<account-id>.r2.cloudflarestorage.com`);
+  - secrets: `FIXTURES_S3_ACCESS_KEY_ID` and `FIXTURES_S3_SECRET_ACCESS_KEY`. These are the S3 key pair from R2 → Manage R2 API Tokens, not a Cloudflare API token. An Object Read token scoped to the bucket is enough.
 - Real-footage metrics are reported, not gating, until they are stable (see VERIFICATION.md threshold rule).
 
 ## Labelling guide
