@@ -65,7 +65,7 @@ data class CameraProfile(
     }
 }
 
-/** The use cases the app binds together: PREVIEW and ANALYSIS in setup and standby, PREVIEW and VIDEO when recording. */
+/** Use cases the app binds: PREVIEW and ANALYSIS in setup and standby, PREVIEW and VIDEO when recording. */
 enum class UseCase { PREVIEW, ANALYSIS, VIDEO }
 
 @Serializable
@@ -87,6 +87,7 @@ data class AudioSourceSupport(val name: String, val supported: Boolean)
 data class CodecSupport(val mime: String, val encoder: Boolean, val name: String, val hardware: Boolean)
 
 /** Frame rate a stream holds, from the camera's minimum frame duration in nanoseconds; 0 when unknown. */
-fun fpsFromMinFrameDurationNs(durationNs: Long): Int = if (durationNs <= 0) 0 else (NANOS_PER_SECOND / durationNs).toInt()
+fun fpsFromMinFrameDurationNs(durationNs: Long): Int =
+    if (durationNs <= 0) 0 else (NANOS_PER_SECOND / durationNs).toInt()
 
 private const val NANOS_PER_SECOND = 1_000_000_000L

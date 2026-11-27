@@ -93,10 +93,7 @@ class MainActivity : ComponentActivity() {
                             onStandby = session::standby,
                             detectMessage = detectMessage,
                             onDetectLine = { scope.launch { detectMessage = detectAndStoreLine(repo) } },
-                            onOpenSystemSettings = {
-                                val uri = Uri.fromParts("package", packageName, null)
-                                startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, uri))
-                            },
+                            onOpenSystemSettings = ::openAppSettings,
                             preview = {
                                 CameraPreview(settings, onMapping = { mapping = it }) { caps ->
                                     capabilities = caps
@@ -110,6 +107,11 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    private fun openAppSettings() {
+        val uri = Uri.fromParts("package", packageName, null)
+        startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, uri))
     }
 
     /** Grabs a frame, runs the F12 detector and stores a found line; returns the message to show. */

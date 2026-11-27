@@ -13,7 +13,10 @@ class DeviceCapabilitiesTest {
         hardwareLevel = "FULL",
         fpsRanges = listOf(FpsRange(15, 30), FpsRange(30, 30), FpsRange(30, 60)),
         useCases = listOf(
-            UseCaseOutputs(UseCase.PREVIEW, sizes(Triple(1280, 720, 60), Triple(1920, 1080, 30), Triple(3840, 2160, 30))),
+            UseCaseOutputs(
+                UseCase.PREVIEW,
+                sizes(Triple(1280, 720, 60), Triple(1920, 1080, 30), Triple(3840, 2160, 30)),
+            ),
             // Analysis cannot output 2160p here, so the combination cannot offer it.
             UseCaseOutputs(UseCase.ANALYSIS, sizes(Triple(1280, 720, 60), Triple(1920, 1080, 30))),
             UseCaseOutputs(UseCase.VIDEO, sizes(Triple(1920, 1080, 60))),

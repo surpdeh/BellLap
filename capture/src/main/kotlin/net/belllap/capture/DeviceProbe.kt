@@ -41,8 +41,11 @@ object DeviceProbe {
         return caps
     }
 
-    private fun probeCameras(manager: CameraManager?): List<CameraProfile> = manager?.cameraIdList.orEmpty().mapNotNull {
-        runCatching { profile(it, manager!!.getCameraCharacteristics(it)) }.getOrNull()
+    private fun probeCameras(manager: CameraManager?): List<CameraProfile> {
+        if (manager == null) return emptyList()
+        return manager.cameraIdList.mapNotNull {
+            runCatching { profile(it, manager.getCameraCharacteristics(it)) }.getOrNull()
+        }
     }
 
     private fun profile(id: String, c: CameraCharacteristics): CameraProfile? {
