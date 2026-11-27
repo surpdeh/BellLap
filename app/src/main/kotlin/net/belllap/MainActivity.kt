@@ -24,6 +24,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.launch
 import net.belllap.core.model.CameraCapabilities
 import net.belllap.core.model.CaptureSettings
+import net.belllap.core.model.PreviewMapping
 import net.belllap.core.statemachine.State
 import net.belllap.debug.DebugEntry
 import net.belllap.settings.SettingsRepository
@@ -55,6 +56,7 @@ class MainActivity : ComponentActivity() {
                 val bell by session.bell.collectAsState()
                 LaunchedEffect(settings) { session.updateSettings(settings) }
                 var capabilities by remember { mutableStateOf<CameraCapabilities?>(null) }
+                var mapping by remember { mutableStateOf(PreviewMapping()) }
                 var settingsOpen by rememberSaveable { mutableStateOf(false) }
                 var asked by rememberSaveable { mutableStateOf(false) }
                 var granted by remember { mutableStateOf(allGranted()) }
@@ -74,6 +76,10 @@ class MainActivity : ComponentActivity() {
                             permission = permissionUi(granted, asked, rationale),
                             settingsOpen = settingsOpen,
                             onSettingsOpenChange = { settingsOpen = it },
+                            mapping = mapping,
+                            onFinishLineChange = { line ->
+                                scope.launch { repo.update { it.copy(finishLine = line) } }
+                            },
                             onSettingsChange = { new -> scope.launch { repo.update { new } } },
                             onRequestPermissions = { launcher.launch(REQUIRED_PERMISSIONS) },
                             onStandby = session::standby,
@@ -82,7 +88,7 @@ class MainActivity : ComponentActivity() {
                                 startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, uri))
                             },
                             preview = {
-                                CameraPreview(settings) { caps ->
+                                CameraPreview(settings, onMapping = { mapping = it }) { caps ->
                                     capabilities = caps
                                     val fixed = settings.coerceTo(caps)
                                     if (fixed != settings) scope.launch { repo.update { fixed } }

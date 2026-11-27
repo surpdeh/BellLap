@@ -8,12 +8,19 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipe
+import androidx.compose.ui.geometry.Offset
 import com.github.takahirom.roborazzi.captureRoboImage
 import net.belllap.core.model.BellSensitivity
 import net.belllap.core.model.CameraCapabilities
 import net.belllap.core.model.CaptureSettings
+import net.belllap.core.model.FinishLine
+import net.belllap.core.model.NormPoint
 import net.belllap.core.model.OutputSize
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -38,6 +45,7 @@ class SetupScreenTest {
         settingsOpen: Boolean = false,
         settings: CaptureSettings = CaptureSettings(),
         onChange: (CaptureSettings) -> Unit = {},
+        onLine: (FinishLine?) -> Unit = {},
         onStandby: () -> Unit = {},
     ) = SetupScreen(
         settings = settings,
@@ -46,6 +54,7 @@ class SetupScreenTest {
         settingsOpen = settingsOpen,
         onSettingsOpenChange = {},
         onSettingsChange = onChange,
+        onFinishLineChange = onLine,
         onRequestPermissions = {},
         onOpenSystemSettings = {},
         onStandby = onStandby,
@@ -148,5 +157,70 @@ class SetupScreenTest {
         composeRule.setContent { Screen(permission = PermissionUi.RATIONALE) }
         composeRule.onNodeWithTag(TestTags.SETUP_SCREEN)
             .captureRoboImage("src/test/screenshots/setup_permission_rationale.png")
+    }
+
+    // The test window is 320x470 dp-ish; the 16:9 frame is letterboxed, so tests read the overlay size.
+    private val stored = FinishLine(NormPoint(0.5f, 0.2f), NormPoint(0.5f, 0.8f))
+
+    @Test
+    fun drawingByDraggingEmitsNormalisedLine() {
+        var latest: FinishLine? = null
+        composeRule.setContent { Screen(onLine = { latest = it }) }
+        composeRule.onNodeWithTag(TestTags.LINE_BUTTON).performClick()
+
+        composeRule.onNodeWithTag(TestTags.LINE_EDITOR).performTouchInput {
+            // Drag across the vertical middle of the frame; the frame fills the width.
+            swipe(Offset(width * 0.5f, height * 0.3f), Offset(width * 0.5f, height * 0.7f), 200)
+        }
+        val line = latest!!
+        assertEquals(0.5f, line.start.x, 0.02f)
+        assertEquals(0.5f, line.end.x, 0.02f)
+        assertTrue(line.start.y < line.end.y)
+    }
+
+    @Test
+    fun draggingAnEndpointHandleMovesOnlyThatEndpoint() {
+        var latest: FinishLine? = null
+        composeRule.setContent { Screen(settings = CaptureSettings(finishLine = stored), onLine = { latest = it }) }
+        composeRule.onNodeWithTag(TestTags.LINE_BUTTON).performClick()
+
+        composeRule.onNodeWithTag(TestTags.LINE_EDITOR).performTouchInput {
+            val frameH = width * 9f / 16f
+            val top = (height - frameH) / 2f
+            val handle = Offset(width * 0.5f, top + frameH * 0.2f)
+            swipe(handle, Offset(width * 0.8f, handle.y), 200)
+        }
+        val line = latest!!
+        assertEquals(0.8f, line.start.x, 0.03f)
+        assertEquals(0.2f, line.start.y, 0.03f)
+        assertEquals(stored.end, line.end)
+    }
+
+    @Test
+    fun clearButtonRemovesTheLine() {
+        var latest: FinishLine? = stored
+        composeRule.setContent { Screen(settings = CaptureSettings(finishLine = stored), onLine = { latest = it }) }
+        composeRule.onNodeWithTag(TestTags.LINE_BUTTON).performClick()
+        composeRule.onNodeWithTag(TestTags.LINE_CLEAR_BUTTON).performClick()
+        assertNull(latest)
+    }
+
+    @Test
+    fun tinyDragIsDiscarded() {
+        var calls = 0
+        composeRule.setContent { Screen(onLine = { calls++ }) }
+        composeRule.onNodeWithTag(TestTags.LINE_BUTTON).performClick()
+        composeRule.onNodeWithTag(TestTags.LINE_EDITOR).performTouchInput {
+            swipe(Offset(width * 0.5f, height * 0.5f), Offset(width * 0.5f + 2f, height * 0.5f), 100)
+        }
+        assertEquals(0, calls)
+    }
+
+    @Test
+    fun finishLineEditorScreenshot() {
+        composeRule.setContent { Screen(settings = CaptureSettings(finishLine = stored)) }
+        composeRule.onNodeWithTag(TestTags.LINE_BUTTON).performClick()
+        composeRule.onNodeWithTag(TestTags.SETUP_SCREEN)
+            .captureRoboImage("src/test/screenshots/setup_finish_line_editing.png")
     }
 }

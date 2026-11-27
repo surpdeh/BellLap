@@ -8,7 +8,9 @@ import kotlinx.coroutines.runBlocking
 import net.belllap.core.model.BellSensitivity
 import net.belllap.core.model.CameraFacing
 import net.belllap.core.model.CaptureSettings
+import net.belllap.core.model.FinishLine
 import net.belllap.core.model.Fps
+import net.belllap.core.model.NormPoint
 import net.belllap.core.model.Resolution
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -40,6 +42,7 @@ class SettingsRepositoryTest {
             crossingBeeps = false,
             flagTimeoutSeconds = 120,
             alertVolumePercent = 70,
+            finishLine = FinishLine(NormPoint(0.4f, 0.1f), NormPoint(0.6f, 0.9f)),
         )
         val first = store("a.preferences_pb")
         SettingsRepository(first).update { changed }

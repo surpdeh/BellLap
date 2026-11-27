@@ -23,6 +23,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,7 +36,9 @@ import net.belllap.core.model.BellSensitivity
 import net.belllap.core.model.CameraCapabilities
 import net.belllap.core.model.CameraFacing
 import net.belllap.core.model.CaptureSettings
+import net.belllap.core.model.FinishLine
 import net.belllap.core.model.Fps
+import net.belllap.core.model.PreviewMapping
 import net.belllap.core.model.Resolution
 
 @Composable
@@ -43,11 +49,13 @@ fun SetupScreen(
     settingsOpen: Boolean,
     onSettingsOpenChange: (Boolean) -> Unit,
     onSettingsChange: (CaptureSettings) -> Unit,
+    onFinishLineChange: (FinishLine?) -> Unit,
     onRequestPermissions: () -> Unit,
     onOpenSystemSettings: () -> Unit,
     modifier: Modifier = Modifier,
     onStandby: () -> Unit = {},
     mode: String = "SETUP",
+    mapping: PreviewMapping = PreviewMapping(),
     preview: @Composable () -> Unit = {},
 ) {
     Box(
@@ -60,6 +68,16 @@ fun SetupScreen(
             preview()
         } else {
             PermissionRationale(permission, onRequestPermissions, onOpenSystemSettings)
+        }
+        var lineEditing by rememberSaveable { mutableStateOf(false) }
+        if (permission == PermissionUi.GRANTED) {
+            FinishLineOverlay(
+                line = settings.finishLine,
+                mapping = mapping,
+                frameAspect = settings.resolution.width.toFloat() / settings.resolution.height,
+                editing = lineEditing,
+                onLineChange = onFinishLineChange,
+            )
         }
         StatusOverlay(
             mode = mode,
@@ -77,6 +95,24 @@ fun SetupScreen(
                     .padding(16.dp)
                     .testTag(TestTags.SETTINGS_BUTTON),
             ) { Text(if (settingsOpen) "Close" else "Settings") }
+            if (!settingsOpen) Column(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
+                    .padding(start = 16.dp, top = 64.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Button(
+                    onClick = { lineEditing = !lineEditing },
+                    modifier = Modifier.testTag(TestTags.LINE_BUTTON),
+                ) { Text(if (lineEditing) "Done" else "Finish line") }
+                if (lineEditing && settings.finishLine != null) {
+                    Button(
+                        onClick = { onFinishLineChange(null) },
+                        modifier = Modifier.testTag(TestTags.LINE_CLEAR_BUTTON),
+                    ) { Text("Clear") }
+                }
+            }
         }
         if (permission == PermissionUi.GRANTED && !settingsOpen) {
             Button(

@@ -28,6 +28,8 @@ data class CaptureSettings(
     val flagTimeoutSeconds: Int = DEFAULT_FLAG_TIMEOUT_S,
     /** Alert volume 0..100 that overrides the system volume, or null to follow the system. */
     val alertVolumePercent: Int? = null,
+    /** The finish line in normalised sensor coordinates (F11), or null when not drawn yet. */
+    val finishLine: FinishLine? = null,
 ) {
     init {
         require(flagTimeoutSeconds in FLAG_TIMEOUT_RANGE_S) { "flagTimeoutSeconds out of range" }
