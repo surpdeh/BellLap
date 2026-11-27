@@ -77,7 +77,9 @@ class MainActivity : ComponentActivity() {
                             settingsOpen = settingsOpen,
                             onSettingsOpenChange = { settingsOpen = it },
                             mapping = mapping,
-                            onFinishLineChange = { line -> scope.launch { repo.update { it.copy(finishLine = line) } } },
+                            onFinishLineChange = { line ->
+                                scope.launch { repo.update { it.copy(finishLine = line) } }
+                            },
                             onSettingsChange = { new -> scope.launch { repo.update { new } } },
                             onRequestPermissions = { launcher.launch(REQUIRED_PERMISSIONS) },
                             onStandby = session::standby,
