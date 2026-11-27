@@ -78,6 +78,7 @@ dependencies {
     implementation(project(":core:statemachine"))
     implementation(project(":audio:android"))
     implementation(project(":capture"))
+    implementation(project(":vision:finishline"))
     implementation(libs.androidx.camera.compose)
     implementation(libs.androidx.datastore.preferences)
     debugImplementation(project(":core:replay"))

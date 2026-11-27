@@ -54,6 +54,8 @@ fun SetupScreen(
     onOpenSystemSettings: () -> Unit,
     modifier: Modifier = Modifier,
     onStandby: () -> Unit = {},
+    onDetectLine: () -> Unit = {},
+    detectMessage: String? = null,
     mode: String = "SETUP",
     mapping: PreviewMapping = PreviewMapping(),
     preview: @Composable () -> Unit = {},
@@ -95,22 +97,42 @@ fun SetupScreen(
                     .padding(16.dp)
                     .testTag(TestTags.SETTINGS_BUTTON),
             ) { Text(if (settingsOpen) "Close" else "Settings") }
-            if (!settingsOpen) Column(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .windowInsetsPadding(WindowInsets.safeDrawing)
-                    .padding(start = 16.dp, top = 64.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Button(
-                    onClick = { lineEditing = !lineEditing },
-                    modifier = Modifier.testTag(TestTags.LINE_BUTTON),
-                ) { Text(if (lineEditing) "Done" else "Finish line") }
-                if (lineEditing && settings.finishLine != null) {
+            if (!settingsOpen) {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .windowInsetsPadding(WindowInsets.safeDrawing)
+                        .padding(start = 16.dp, top = 64.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     Button(
-                        onClick = { onFinishLineChange(null) },
-                        modifier = Modifier.testTag(TestTags.LINE_CLEAR_BUTTON),
-                    ) { Text("Clear") }
+                        onClick = { lineEditing = !lineEditing },
+                        modifier = Modifier.testTag(TestTags.LINE_BUTTON),
+                    ) { Text(if (lineEditing) "Done" else "Finish line") }
+                    Button(
+                        onClick = {
+                            lineEditing = true
+                            onDetectLine()
+                        },
+                        modifier = Modifier.testTag(TestTags.DETECT_BUTTON),
+                    ) { Text("Detect line") }
+                    detectMessage?.let {
+                        Text(
+                            it,
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelLarge,
+                            modifier = Modifier
+                                .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                                .testTag(TestTags.DETECT_MESSAGE),
+                        )
+                    }
+                    if (lineEditing && settings.finishLine != null) {
+                        Button(
+                            onClick = { onFinishLineChange(null) },
+                            modifier = Modifier.testTag(TestTags.LINE_CLEAR_BUTTON),
+                        ) { Text("Clear") }
+                    }
                 }
             }
         }
