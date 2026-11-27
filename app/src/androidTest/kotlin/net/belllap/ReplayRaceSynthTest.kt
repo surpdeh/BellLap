@@ -15,8 +15,10 @@ import net.belllap.debug.ReplayTags
 import net.belllap.testing.fixtures.Fixtures
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import java.io.File
 
 /** F24: replays race_synth (real MP4 decode, WAV source, state machine) from the debug menu and checks the log. */
 class ReplayRaceSynthTest {
@@ -26,6 +28,22 @@ class ReplayRaceSynthTest {
 
     @get:Rule(order = 1)
     val composeRule = createAndroidComposeRule<MainActivity>()
+
+    /**
+     * Puts the host-encoded race_synth (`:app:raceSynthMedia`, androidTest assets) where the app caches it, so the
+     * replay skips encoding on the emulator. Without those assets (no ffmpeg at build time) the app encodes it.
+     */
+    @Before
+    fun placeHostEncodedMedia() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val assets = instrumentation.context.assets
+        val names = assets.list(ASSET_DIR).orEmpty()
+        val dir = File(instrumentation.targetContext.cacheDir, ASSET_DIR).apply { mkdirs() }
+        for (name in names) {
+            assets.open("$ASSET_DIR/$name").use { input -> File(dir, name).outputStream().use { input.copyTo(it) } }
+        }
+        android.util.Log.i("BellLapReplay", "host-encoded media placed: ${names.toList()}")
+    }
 
     @Test
     fun replaysRaceSynthAndLogsTheEventSequence() {
@@ -80,7 +98,7 @@ class ReplayRaceSynthTest {
     }
 
     private fun expectedSequence(): List<String> {
-        val crossings = Fixtures.race().labels.crossings.size
+        val crossings = Fixtures.race(withFrames = false).labels.crossings.size
         return listOf(
             "SETUP>STANDBY:StandbyRequested",
             "STANDBY>ARMING:BellDetected",
@@ -129,6 +147,7 @@ class ReplayRaceSynthTest {
     }
 
     private companion object {
+        const val ASSET_DIR = "replay"
         const val PREPARE_TIMEOUT_MS = 300_000L
         const val TIMEOUT_MS = 180_000L
         const val MODE_TIMEOUT_MS = 90_000L

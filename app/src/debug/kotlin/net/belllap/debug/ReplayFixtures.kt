@@ -13,17 +13,20 @@ class ReplayInput(val name: String, val video: File, val audio: File, val detect
 object ReplayFixtures {
     const val RACE_SYNTH = "race_synth"
 
-    /** Generates the `race_synth` fixture, writes its WAV, and encodes its frames to MP4 (cached). */
+    /**
+     * Generates the `race_synth` fixture, writes its WAV, and encodes its frames to MP4 (cached). When the MP4 is
+     * already in [dir] (cached, or placed there by the emulator tests from host-encoded assets), only the labels
+     * are generated.
+     */
     fun raceSynth(dir: File): ReplayInput {
-        val fixture = Fixtures.race()
-        val labels = fixture.labels
         val wav = File(dir, "$RACE_SYNTH.wav")
         val mp4 = File(dir, "$RACE_SYNTH.mp4")
+        val encoded = mp4.length() > 0L
+        val fixture = Fixtures.race(withFrames = !encoded)
+        val labels = fixture.labels
         val audio = checkNotNull(fixture.audio)
         if (!wav.exists()) WavIo.write(wav, audio.sampleRate, audio.samples)
-        if (!mp4.exists() || mp4.length() == 0L) {
-            Mp4Encoder.encode(checkNotNull(fixture.frames), checkNotNull(labels.fps).toInt(), mp4)
-        }
+        if (!encoded) Mp4Encoder.encode(checkNotNull(fixture.frames), checkNotNull(labels.fps).toInt(), mp4)
         val detectors = LabelDrivenDetectors.of(
             bellOnsetsNs = labels.bellOnsetsNs,
             flagIntervals = labels.flagIntervals.map { it.startNs until it.endNs },
