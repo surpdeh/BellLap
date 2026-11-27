@@ -54,7 +54,6 @@ fun FinishLineOverlay(
     // The sensor frame is landscape; a 90/270 display rotation shows it portrait.
     val aspect = if (mapping.rotationDegrees % 180 == 0) frameAspect else 1f / frameAspect
     var draft by remember(line) { mutableStateOf(line) }
-    val currentDraft by rememberUpdatedState(draft)
     val currentLine by rememberUpdatedState(line)
     val currentMapping by rememberUpdatedState(mapping)
     val grabPx = with(LocalDensity.current) { GRAB_RADIUS.toPx() }
@@ -75,7 +74,7 @@ fun FinishLineOverlay(
                 var grab: Grab? = null
                 detectDragGestures(
                     onDragStart = { down ->
-                        val shown = currentDraft?.let { currentMapping.sensorToDisplay(it) }
+                        val shown = draft?.let { currentMapping.sensorToDisplay(it) }
                         grab = shown?.let { nearestHandle(it, down, grabPx, ::toScreen) }
                         if (grab == null) {
                             val p = currentMapping.displayToSensor(toDisplayNorm(down))
@@ -85,11 +84,11 @@ fun FinishLineOverlay(
                     },
                     onDrag = { change, _ ->
                         change.consume()
-                        val cur = currentDraft ?: return@detectDragGestures
+                        val cur = draft ?: return@detectDragGestures
                         val p = currentMapping.displayToSensor(toDisplayNorm(change.position))
                         draft = if (grab == Grab.START) cur.copy(start = p) else cur.copy(end = p)
                     },
-                    onDragEnd = { commit(currentDraft, currentLine, onLineChange) { draft = it } },
+                    onDragEnd = { commit(draft, currentLine, onLineChange) { draft = it } },
                     onDragCancel = { draft = currentLine },
                 )
             }
