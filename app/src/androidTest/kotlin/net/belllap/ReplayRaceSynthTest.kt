@@ -31,9 +31,7 @@ class ReplayRaceSynthTest {
         composeRule.onNodeWithTag(ReplayTags.OPEN).performClick()
         composeRule.onNodeWithTag(ReplayTags.RUN_RACE_SYNTH).performClick()
 
-        composeRule.waitUntil(TIMEOUT_MS) { statusText().let { it.startsWith("Done") || it.startsWith("Failed") } }
-        val status = statusText()
-        assertTrue("Replay did not complete: $status", status.startsWith("Done"))
+        awaitReplayFinished()
         composeRule.onNodeWithTag(ReplayTags.STATE).assertTextEquals("SETUP")
         composeRule.waitForIdle()
         Thread.sleep(HOLD_MS)
@@ -71,8 +69,7 @@ class ReplayRaceSynthTest {
             composeRule.waitForIdle()
             TestEvidence.screenshot(shot)
         }
-        composeRule.waitUntil(TIMEOUT_MS) { statusText().let { it.startsWith("Done") || it.startsWith("Failed") } }
-        assertTrue("Replay did not complete: ${statusText()}", statusText().startsWith("Done"))
+        awaitReplayFinished()
         composeRule.onNodeWithTag(ReplayTags.STATE).assertTextEquals("SETUP")
         composeRule.waitForIdle()
         Thread.sleep(HOLD_MS)
@@ -92,6 +89,17 @@ class ReplayRaceSynthTest {
             "ACQUISITION>ARMED:Stop",
             "ARMED>SETUP:Stop",
         )
+    }
+
+    /** Waits for Done or Failed. On a timeout, keeps a screenshot and reports what the screen said. */
+    private fun awaitReplayFinished() {
+        try {
+            composeRule.waitUntil(TIMEOUT_MS) { statusText().let { it.startsWith("Done") || it.startsWith("Failed") } }
+        } catch (e: androidx.compose.ui.test.ComposeTimeoutException) {
+            runCatching { TestEvidence.screenshot("replay-timeout") }
+            throw AssertionError("Replay timed out. Status='${statusText()}' state='${textOf(ReplayTags.STATE)}'", e)
+        }
+        assertTrue("Replay did not complete: ${statusText()}", statusText().startsWith("Done"))
     }
 
     private fun statusText(): String = textOf(ReplayTags.STATUS)
