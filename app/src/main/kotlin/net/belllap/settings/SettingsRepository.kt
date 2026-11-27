@@ -8,10 +8,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import net.belllap.core.model.CameraFacing
 import net.belllap.core.model.CaptureSettings
-import net.belllap.core.model.Fps
-import net.belllap.core.model.Resolution
 
 /** Persists [CaptureSettings] in DataStore. Unknown or invalid stored values fall back to defaults. */
 class SettingsRepository(private val store: DataStore<Preferences>) {

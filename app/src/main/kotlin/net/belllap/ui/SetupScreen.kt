@@ -22,7 +22,6 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -171,6 +170,7 @@ fun SettingsOverlay(
     modifier: Modifier = Modifier,
 ) {
     val resolutions = capabilities?.supportedResolutions()?.takeIf { it.isNotEmpty() }
+    val timeoutRange = CaptureSettings.FLAG_TIMEOUT_RANGE_S
     val fpsOptions = capabilities?.supportedFps()?.takeIf { it.isNotEmpty() }
     Surface(
         modifier = modifier.widthIn(max = 360.dp).testTag(TestTags.SETTINGS_OVERLAY),
@@ -182,13 +182,19 @@ fun SettingsOverlay(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Label("Camera")
-            Chips(CameraFacing.entries, settings.facing, { if (it == CameraFacing.BACK) "Back" else "Front" }, { true }) {
-                onChange(settings.copy(facing = it))
-            }
+            Chips(
+                options = CameraFacing.entries,
+                selected = settings.facing,
+                label = { if (it == CameraFacing.BACK) "Back" else "Front" },
+                enabled = { true },
+            ) { onChange(settings.copy(facing = it)) }
             Label("Resolution")
-            Chips(Resolution.entries, settings.resolution, { "${it.height}p" }, { resolutions == null || it in resolutions }) {
-                onChange(settings.copy(resolution = it))
-            }
+            Chips(
+                options = Resolution.entries,
+                selected = settings.resolution,
+                label = { "${it.height}p" },
+                enabled = { resolutions == null || it in resolutions },
+            ) { onChange(settings.copy(resolution = it)) }
             Label("Frame rate")
             Chips(Fps.entries, settings.fps, { "${it.value} fps" }, { fpsOptions == null || it in fpsOptions }) {
                 onChange(settings.copy(fps = it))
@@ -207,8 +213,7 @@ fun SettingsOverlay(
             Slider(
                 value = settings.flagTimeoutSeconds.toFloat(),
                 onValueChange = { onChange(settings.copy(flagTimeoutSeconds = it.toInt())) },
-                valueRange = CaptureSettings.FLAG_TIMEOUT_RANGE_S.first.toFloat()..
-                    CaptureSettings.FLAG_TIMEOUT_RANGE_S.last.toFloat(),
+                valueRange = timeoutRange.first.toFloat()..timeoutRange.last.toFloat(),
                 modifier = Modifier.testTag(TestTags.FLAG_TIMEOUT_SLIDER),
             )
             val volume = settings.alertVolumePercent

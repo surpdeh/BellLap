@@ -3,12 +3,14 @@ package net.belllap.core.model
 enum class CameraFacing { BACK, FRONT }
 
 /** Capture resolution by frame height; 16:9 landscape is assumed. */
+@Suppress("MagicNumber")
 enum class Resolution(val width: Int, val height: Int) {
     HD_720(1280, 720),
     FHD_1080(1920, 1080),
     UHD_2160(3840, 2160),
 }
 
+@Suppress("MagicNumber")
 enum class Fps(val value: Int) { FPS_30(30), FPS_60(60) }
 
 /** User-chosen capture and automation settings (F10). Pure data, persisted by the app module. */
@@ -25,7 +27,9 @@ data class CaptureSettings(
 ) {
     init {
         require(flagTimeoutSeconds in FLAG_TIMEOUT_RANGE_S) { "flagTimeoutSeconds out of range" }
-        require(alertVolumePercent == null || alertVolumePercent in 0..100) { "alertVolumePercent out of range" }
+        require(
+            alertVolumePercent == null || alertVolumePercent in VOLUME_RANGE_PCT,
+        ) { "alertVolumePercent out of range" }
     }
 
     /** Returns these settings with resolution and fps replaced by the nearest option [caps] supports. */
@@ -45,6 +49,7 @@ data class CaptureSettings(
     companion object {
         const val DEFAULT_FLAG_TIMEOUT_S = 60
         val FLAG_TIMEOUT_RANGE_S = 10..600
+        val VOLUME_RANGE_PCT = 0..100
     }
 }
 

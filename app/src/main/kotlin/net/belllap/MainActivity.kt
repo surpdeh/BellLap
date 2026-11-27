@@ -9,9 +9,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -64,9 +64,8 @@ class MainActivity : ComponentActivity() {
                     onSettingsChange = { new -> scope.launch { repo.update { new } } },
                     onRequestPermissions = { launcher.launch(REQUIRED_PERMISSIONS) },
                     onOpenSystemSettings = {
-                        startActivity(
-                            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null)),
-                        )
+                        val uri = Uri.fromParts("package", packageName, null)
+                        startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, uri))
                     },
                     preview = {
                         CameraPreview(settings) { caps ->
