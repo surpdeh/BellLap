@@ -59,6 +59,9 @@ data class Labels(
         const val SCHEMA_VERSION = 1
         const val FILE_NAME = "labels.json"
 
+        /** [DistractorLabel.kind] of a static chequered banner in view: no flag may be reported. */
+        const val BANNER_KIND = "chequered_banner"
+
         private val JSON = Json {
             prettyPrint = true
             encodeDefaults = true

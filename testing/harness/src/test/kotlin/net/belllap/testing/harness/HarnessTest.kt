@@ -89,12 +89,10 @@ class HarnessTest {
     }
 
     @Test
-    fun flagDetectorIgnoresTheStaticBannerAndSeesTheWavingFlag() {
+    fun flagRunIgnoresTheStaticBannerAndSeesTheWavingFlag() {
         val frames = Fixtures.flag().frames!!
-        val quiet = BaselineFlagDetector().also { d -> frames.take(100).forEach(d::accept) }
-        assertTrue(quiet.finish().isEmpty())
-        val waving = BaselineFlagDetector().also { d -> frames.take(300).forEach(d::accept) }
-        assertEquals(1, waving.finish().size)
+        assertTrue(FlagRun.over(frames.take(100)).intervals.isEmpty())
+        assertEquals(1, FlagRun.over(frames.take(300)).intervals.size)
     }
 
     @Test

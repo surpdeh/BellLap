@@ -81,6 +81,7 @@ dependencies {
     implementation(libs.androidx.camera.compose)
     implementation(libs.androidx.datastore.preferences)
     debugImplementation(project(":core:replay"))
+    debugImplementation(project(":vision:flag"))
     debugImplementation(project(":testing:fixtures"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
