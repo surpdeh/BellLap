@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     implementation(project(":testing:fixtures"))
+    implementation(project(":audio:bell"))
     implementation(libs.kotlinx.serialization.json)
     testImplementation(libs.junit)
 }
@@ -21,6 +22,14 @@ tasks.register<JavaExec>("replay") {
     inputs.file(thresholds)
     outputs.dir(reportsDir)
     args(reportsDir.get().asFile.absolutePath, thresholds.absolutePath)
+    // Stage 1 for the bell cascade: off by default; see scripts/bell/replay-yamnet.sh for the YAMNet passes.
+    listOf("bell.dump", "bell.scores", "bell.ambienceHours").forEach { key ->
+        providers.gradleProperty(key).orNull?.let {
+            systemProperty("belllap.$key", it)
+            inputs.property(key, it)
+        }
+    }
+    providers.gradleProperty("bell.scores").orNull?.let { inputs.file(it) }
 }
 
 tasks.register<JavaExec>("replayReal") {
@@ -32,4 +41,7 @@ tasks.register<JavaExec>("replayReal") {
     outputs.upToDateWhen { false } // fixtures live outside the build; always re-run
     outputs.dir(reportsDir)
     args(reportsDir.get().asFile.absolutePath, root.absolutePath)
+    listOf("bell.dump", "bell.scores").forEach { key ->
+        providers.gradleProperty(key).orNull?.let { systemProperty("belllap.$key", it) }
+    }
 }

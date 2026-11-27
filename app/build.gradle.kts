@@ -75,6 +75,8 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(project(":core:log"))
     implementation(project(":core:model"))
+    implementation(project(":core:statemachine"))
+    implementation(project(":audio:android"))
     implementation(project(":capture"))
     implementation(libs.androidx.camera.compose)
     implementation(libs.androidx.datastore.preferences)
@@ -87,6 +89,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
 
     testImplementation(libs.junit)
+    testImplementation(project(":testing:fixtures"))
     testImplementation(libs.robolectric)
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)

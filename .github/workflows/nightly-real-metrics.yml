@@ -19,10 +19,10 @@ jobs:
           distribution: temurin
           java-version: 25
       - uses: gradle/actions/setup-gradle@v5
-      - name: Fetch real fixtures (skips if secrets are absent)
+      - name: Fetch real fixtures (skips if the variables or secrets are absent)
         env:
-          FIXTURES_S3_BUCKET: ${{ secrets.FIXTURES_S3_BUCKET }}
-          FIXTURES_S3_ENDPOINT: ${{ secrets.FIXTURES_S3_ENDPOINT }}
+          FIXTURES_S3_BUCKET: ${{ vars.FIXTURES_S3_BUCKET }}
+          FIXTURES_S3_ENDPOINT: ${{ vars.FIXTURES_S3_ENDPOINT }}
           AWS_ACCESS_KEY_ID: ${{ secrets.FIXTURES_S3_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.FIXTURES_S3_SECRET_ACCESS_KEY }}
         run: scripts/fixtures/fetch.sh

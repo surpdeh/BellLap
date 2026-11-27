@@ -29,6 +29,7 @@ include(
     ":core:log",
     ":audio:source",
     ":audio:bell",
+    ":audio:android",
     ":vision:core",
     ":vision:flag",
     ":vision:finishline",
