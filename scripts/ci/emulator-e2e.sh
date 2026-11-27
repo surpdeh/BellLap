@@ -41,6 +41,10 @@ echo "== logcat excerpt: crashes, camera and test failures =="
 grep -E "FATAL EXCEPTION|AndroidRuntime|TestRunner:.*(failed|Exception)" evidence/logcat.txt | cut -c1-260 | head -20 || true
 echo "-- camera lines (first 60) --"
 grep -E "BellLapCamera|CameraX|Camera2CameraImpl|CameraDevice|CameraCaptureSession|CameraService|Camera preview|SurfaceRequest" evidence/logcat.txt | grep -vE "AppsFilter|WindowManager|Transition|CameraValidator|^\S+ \S+ +[0-9]+ +[0-9]+ [A-Z] CameraX *: +(at |\.\.\.)|Caused by" | cut -c1-260 | head -80 || true
+echo "-- thread stacks when the preview wait expired --"
+grep "PreviewHang" evidence/logcat.txt | cut -c29-260 | head -120 || true
+echo "-- camera service and HAL lines --"
+grep -iE "cameraserver|CameraProviderManager|camera.provider|EmulatedCamera|goldfish|CameraManager" evidence/logcat.txt | grep -vE "AppsFilter|WindowManager|Transition" | cut -c1-240 | head -50 || true
 echo "-- camera features and services --"
 adb shell pm list features | grep -i camera || echo "no camera feature reported"
 adb shell dumpsys media.camera | head -15 || true

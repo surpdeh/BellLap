@@ -46,9 +46,19 @@ object TestEvidence {
             if (System.currentTimeMillis() >= deadline) {
                 // Keep what the screen showed, so the evidence explains the failure.
                 runCatching { screenshot("preview-timeout") }
+                logBlockedThreads()
                 error("Camera preview never rendered within ${timeoutMs}ms")
             }
             Thread.sleep(POLL_MS)
+        }
+    }
+
+    /** Logs the stacks of the main and CameraX threads, so a hung camera init shows where it is stuck. */
+    private fun logBlockedThreads() {
+        for ((thread, stack) in Thread.getAllStackTraces()) {
+            if (thread.name != "main" && !thread.name.contains("Camera", ignoreCase = true)) continue
+            val frames = stack.take(MAX_STACK_FRAMES).joinToString("\n") { "    at $it" }
+            Log.e("PreviewHang", "thread '${thread.name}' state=${thread.state}\n$frames")
         }
     }
 
@@ -74,6 +84,7 @@ object TestEvidence {
     }
 
     private const val SAMPLE_STEP = 16
+    private const val MAX_STACK_FRAMES = 25
     private const val RGB_MASK = 0x00FFFFFF
     private const val PREVIEW_TIMEOUT_MS = 30_000L
     private const val POLL_MS = 500L
