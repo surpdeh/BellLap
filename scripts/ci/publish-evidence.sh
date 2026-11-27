@@ -20,7 +20,7 @@ find artifacts -type f \( -name '*.png' -o -name '*.gif' \) -size -8M | head -40
   cp "$f" "$WORK/ev/$DEST/$(echo "${f#artifacts/}" | tr '/' '_')"
 done
 # Small probe JSON (F25) is published too, because the workflow artifact zip is not reachable from every client.
-find artifacts -type f -name 'device-capabilities*.json' -size -1M | head -10 | while read -r f; do
+find artifacts -type f -name 'device-capabilities*.json' -size -1000k | head -10 | while read -r f; do
   cp "$f" "$WORK/ev/$DEST/$(echo "${f#artifacts/}" | tr '/' '_')"
 done
 IMAGES=$(cd "$WORK/ev/$DEST" && ls 2>/dev/null | grep -E '\.(png|gif)$' || true)
