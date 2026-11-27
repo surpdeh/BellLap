@@ -65,9 +65,10 @@ object Fixtures {
 
     /**
      * A whole race: bell lap rung from 12 s, flag 24 to 36 s, riders crossing from 26 s (a single, then bunches of
-     * 4 and 2).
+     * 4 and 2). [withFrames] false skips rendering the video, for callers that already have it encoded and need the
+     * labels.
      */
-    fun race(seed: Long = DEFAULT_SEED): Fixture {
+    fun race(seed: Long = DEFAULT_SEED, withFrames: Boolean = true): Fixture {
         val duration = RACE_SECONDS
         val audio = BellAudioGenerator(
             seed + 1,
@@ -89,7 +90,7 @@ object Fixtures {
             flagIntervals = flag.map { IntervalNs((it.first * NS).toLong(), (it.second * NS).toLong()) },
             crossings = crossingLabels(riders, spec.fps), distractors = audio.distractors,
         )
-        return Fixture(labels.validate(), audio, SceneRenderer.render(spec))
+        return Fixture(labels.validate(), audio, if (withFrames) SceneRenderer.render(spec) else null)
     }
 
     fun all(seed: Long = DEFAULT_SEED): List<Fixture> =

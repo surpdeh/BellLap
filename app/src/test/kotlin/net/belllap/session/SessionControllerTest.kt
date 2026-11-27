@@ -2,11 +2,15 @@ package net.belllap.session
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
 import net.belllap.audio.bell.AcceptAllClassifier
 import net.belllap.audio.bell.BellTrace
@@ -40,9 +44,13 @@ class SessionControllerTest {
         }
     }
 
-    private fun controller(audio: AudioSource) = SessionController(
+    private fun controller(
+        audio: AudioSource,
+        scope: CoroutineScope = this.scope,
+        nowMs: () -> Long = { clockMs },
+    ) = SessionController(
         scope = scope,
-        nowMs = { clockMs },
+        nowMs = nowMs,
         openAudio = {
             opened++
             audio
@@ -73,9 +81,12 @@ class SessionControllerTest {
         assertEquals("stage0-only", c.bell.value.classifier)
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun bellNowArmsByHandAndTheArmDelayEndsInArmed() = runBlocking {
-        val c = controller(silence)
+    fun bellNowArmsByHandAndTheArmDelayEndsInArmed() = runTest {
+        // The arm-delay timer's delay and the machine's clock both run on virtual time, so the test is not a race
+        // between the timer coroutine reading the clock and the test advancing it.
+        val c = controller(silence, scope = backgroundScope, nowMs = { testScheduler.currentTime })
         c.updateSettings(CaptureSettings(bellAutomation = false))
         c.standby()
         assertEquals(State.Standby, c.state.value)
@@ -83,8 +94,12 @@ class SessionControllerTest {
         assertEquals(0, opened)
         c.bellNow()
         assertEquals(State.Arming, c.state.value)
-        clockMs = 10_000 // the timer fires on the injected clock, not the wall clock
-        withTimeout(5_000) { c.state.first { it == State.Armed } }
+        advanceTimeBy(ARM_DELAY_MS - 1)
+        runCurrent()
+        assertEquals("still arming just before the delay ends", State.Arming, c.state.value)
+        advanceTimeBy(1)
+        runCurrent()
+        assertEquals(State.Armed, c.state.value)
         c.stop()
         assertEquals(State.Setup, c.state.value)
         assertEquals(
@@ -107,5 +122,9 @@ class SessionControllerTest {
         assertTrue(c.bell.value.listening)
         withTimeout(5_000) { while (opened == 0) Thread.sleep(5) }
         assertEquals(1, opened)
+    }
+
+    private companion object {
+        const val ARM_DELAY_MS = 10_000L
     }
 }
