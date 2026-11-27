@@ -21,4 +21,9 @@ object TestTags {
     const val LINE_EDITOR = "line_editor"
     const val LINE_OVERLAY = "line_overlay"
     const val VOLUME_SLIDER = "volume_slider"
+    const val STANDBY_BUTTON = "standby_button"
+    const val STANDBY_SCREEN = "standby_screen"
+    const val BELL_NOW_BUTTON = "bell_now_button"
+    const val BELL_STATUS = "bell_status"
+    const val STOP_BUTTON = "stop_button"
 }

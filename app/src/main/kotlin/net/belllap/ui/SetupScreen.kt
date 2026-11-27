@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import net.belllap.core.model.BellSensitivity
 import net.belllap.core.model.CameraCapabilities
 import net.belllap.core.model.CameraFacing
 import net.belllap.core.model.CaptureSettings
@@ -52,6 +53,7 @@ fun SetupScreen(
     onRequestPermissions: () -> Unit,
     onOpenSystemSettings: () -> Unit,
     modifier: Modifier = Modifier,
+    onStandby: () -> Unit = {},
     mode: String = "SETUP",
     mapping: PreviewMapping = PreviewMapping(),
     preview: @Composable () -> Unit = {},
@@ -95,7 +97,7 @@ fun SetupScreen(
             ) { Text(if (settingsOpen) "Close" else "Settings") }
             if (!settingsOpen) Row(
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
+                    .align(Alignment.BottomStart)
                     .windowInsetsPadding(WindowInsets.safeDrawing)
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -111,6 +113,16 @@ fun SetupScreen(
                     modifier = Modifier.testTag(TestTags.LINE_BUTTON),
                 ) { Text(if (lineEditing) "Done" else "Finish line") }
             }
+        }
+        if (permission == PermissionUi.GRANTED && !settingsOpen) {
+            Button(
+                onClick = onStandby,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
+                    .padding(24.dp)
+                    .testTag(TestTags.STANDBY_BUTTON),
+            ) { Text("Standby") }
         }
         if (settingsOpen && permission == PermissionUi.GRANTED) {
             SettingsOverlay(
@@ -182,7 +194,7 @@ private fun PermissionRationale(
 }
 
 @Composable
-private fun StatusOverlay(mode: String, modifier: Modifier = Modifier) {
+internal fun StatusOverlay(mode: String, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .background(Color.White.copy(alpha = 0.85f), RoundedCornerShape(8.dp))
@@ -239,6 +251,13 @@ fun SettingsOverlay(
             ToggleRow("Bell detection", settings.bellAutomation, TestTags.TOGGLE_BELL) {
                 onChange(settings.copy(bellAutomation = it))
             }
+            Label("Bell sensitivity")
+            Chips(
+                options = BellSensitivity.entries,
+                selected = settings.bellSensitivity,
+                label = ::sensitivityLabel,
+                enabled = { settings.bellAutomation },
+            ) { onChange(settings.copy(bellSensitivity = it)) }
             ToggleRow("Flag detection", settings.flagAutomation, TestTags.TOGGLE_FLAG) {
                 onChange(settings.copy(flagAutomation = it))
             }
@@ -270,6 +289,12 @@ fun SettingsOverlay(
 }
 
 private const val DEFAULT_OVERRIDE_VOLUME = 80
+
+fun sensitivityLabel(s: BellSensitivity): String = when (s) {
+    BellSensitivity.LOW -> "Low"
+    BellSensitivity.MEDIUM -> "Medium"
+    BellSensitivity.HIGH -> "High"
+}
 
 @Composable
 private fun Label(text: String) =

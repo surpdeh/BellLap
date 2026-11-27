@@ -106,7 +106,15 @@ private fun ReplayScreen(onClose: () -> Unit) {
             )
         }
         Button(
-            onClick = { scope.launch { controller.replay({ ReplayFixtures.raceSynth(context.replayDir()) }, speed) } },
+            onClick = {
+                val classifier = { (context.applicationContext as BellLapApp).bellClassifier }
+                scope.launch {
+                    controller.replay(
+                        { ReplayFixtures.raceSynth(context.replayDir(), classifier()) },
+                        speed,
+                    )
+                }
+            },
             enabled = !controller.running,
             modifier = Modifier.testTag(ReplayTags.RUN_RACE_SYNTH),
         ) { Text("Replay race_synth fixture") }

@@ -105,6 +105,23 @@ class BellAudioGenerator(
     }
 
     companion object {
+        /**
+         * Strike times of one bell lap: a ring of [strikes] strikes 0.3 to 0.45 s apart starting at [startS],
+         * the way a commissaire swings a hand bell.
+         */
+        fun ring(startS: Double, rng: Random, strikes: Int = RING_STRIKES): List<Double> {
+            val out = ArrayList<Double>(strikes)
+            var t = startS
+            repeat(strikes) {
+                out += t
+                t += rng.nextDouble(STRIKE_GAP_MIN_S, STRIKE_GAP_MAX_S)
+            }
+            return out
+        }
+
+        const val RING_STRIKES = 6
+        private const val STRIKE_GAP_MIN_S = 0.3
+        private const val STRIKE_GAP_MAX_S = 0.45
         const val DEFAULT_RATE = 16_000
         const val F0 = 1800.0
         val PARTIALS = listOf(1.0, 2.0, 2.76)

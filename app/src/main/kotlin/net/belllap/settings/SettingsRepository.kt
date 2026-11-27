@@ -28,6 +28,7 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             resolution = enumOrDefault(p[RESOLUTION], d.resolution),
             fps = enumOrDefault(p[FPS], d.fps),
             bellAutomation = p[BELL] ?: d.bellAutomation,
+            bellSensitivity = enumOrDefault(p[BELL_SENSITIVITY], d.bellSensitivity),
             flagAutomation = p[FLAG] ?: d.flagAutomation,
             crossingBeeps = p[BEEPS] ?: d.crossingBeeps,
             flagTimeoutSeconds = timeout ?: d.flagTimeoutSeconds,
@@ -41,6 +42,7 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         p[RESOLUTION] = s.resolution.name
         p[FPS] = s.fps.name
         p[BELL] = s.bellAutomation
+        p[BELL_SENSITIVITY] = s.bellSensitivity.name
         p[FLAG] = s.flagAutomation
         p[BEEPS] = s.crossingBeeps
         p[FLAG_TIMEOUT] = s.flagTimeoutSeconds
@@ -58,6 +60,7 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         val RESOLUTION = stringPreferencesKey("resolution")
         val FPS = stringPreferencesKey("fps")
         val BELL = booleanPreferencesKey("bell_automation")
+        val BELL_SENSITIVITY = stringPreferencesKey("bell_sensitivity")
         val FLAG = booleanPreferencesKey("flag_automation")
         val BEEPS = booleanPreferencesKey("crossing_beeps")
         val FLAG_TIMEOUT = intPreferencesKey("flag_timeout_s")
