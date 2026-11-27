@@ -7,10 +7,15 @@ import androidx.compose.ui.test.onNodeWithTag
 import net.belllap.ui.TestTags
 import org.junit.Assert.assertTrue
 import org.junit.Rule
+import androidx.test.rule.GrantPermissionRule
 import org.junit.Test
 
 class LaunchTest {
-    @get:Rule
+    @get:Rule(order = 0)
+    val permissions: GrantPermissionRule =
+        GrantPermissionRule.grant(android.Manifest.permission.CAMERA, android.Manifest.permission.RECORD_AUDIO)
+
+    @get:Rule(order = 1)
     val composeRule = createAndroidComposeRule<MainActivity>()
 
     @Test

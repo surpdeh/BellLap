@@ -44,6 +44,10 @@ roborazzi {
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(project(":core:log"))
+    implementation(project(":core:model"))
+    implementation(project(":capture"))
+    implementation(libs.androidx.camera.compose)
+    implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.ui)
@@ -61,6 +65,7 @@ dependencies {
 
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
 }
