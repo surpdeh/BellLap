@@ -12,6 +12,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -29,6 +30,7 @@ import net.belllap.core.model.CameraCapabilities
 import net.belllap.core.model.CaptureSettings
 import net.belllap.core.service.SessionForegroundService
 import net.belllap.core.service.dimmedStandby
+import net.belllap.debug.DebugEntry
 import net.belllap.settings.SettingsRepository
 import net.belllap.ui.CameraPreview
 import net.belllap.ui.OEM_TIPS_URL
@@ -127,28 +129,31 @@ class MainActivity : ComponentActivity() {
                     )
                     return@MaterialTheme
                 }
-                SetupScreen(
-                    settings = settings,
-                    capabilities = capabilities,
-                    permission = permissionUi(granted, asked, rationale),
-                    settingsOpen = settingsOpen,
-                    onSettingsOpenChange = { settingsOpen = it },
-                    onSettingsChange = { new -> scope.launch { repo.update { new } } },
-                    mode = sessionState::class.simpleName.orEmpty().uppercase(),
-                    onStartStandby = { SessionForegroundService.startStandby(this@MainActivity) },
-                    onRequestPermissions = { launcher.launch(REQUIRED_PERMISSIONS) },
-                    onOpenSystemSettings = {
-                        val uri = Uri.fromParts("package", packageName, null)
-                        startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, uri))
-                    },
-                    preview = {
-                        CameraPreview(settings) { caps ->
-                            capabilities = caps
-                            val fixed = settings.coerceTo(caps)
-                            if (fixed != settings) scope.launch { repo.update { fixed } }
-                        }
-                    },
-                )
+                Box {
+                    SetupScreen(
+                        settings = settings,
+                        capabilities = capabilities,
+                        permission = permissionUi(granted, asked, rationale),
+                        settingsOpen = settingsOpen,
+                        onSettingsOpenChange = { settingsOpen = it },
+                        onSettingsChange = { new -> scope.launch { repo.update { new } } },
+                        mode = sessionState::class.simpleName.orEmpty().uppercase(),
+                        onStartStandby = { SessionForegroundService.startStandby(this@MainActivity) },
+                        onRequestPermissions = { launcher.launch(REQUIRED_PERMISSIONS) },
+                        onOpenSystemSettings = {
+                            val uri = Uri.fromParts("package", packageName, null)
+                            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, uri))
+                        },
+                        preview = {
+                            CameraPreview(settings) { caps ->
+                                capabilities = caps
+                                val fixed = settings.coerceTo(caps)
+                                if (fixed != settings) scope.launch { repo.update { fixed } }
+                            }
+                        },
+                    )
+                    DebugEntry()
+                }
             }
         }
     }
