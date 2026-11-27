@@ -1,3 +1,5 @@
+@file:Suppress("MatchingDeclarationName")
+
 package net.belllap.ui
 
 import androidx.compose.foundation.background
@@ -33,6 +35,8 @@ data class OnboardingStatus(
     val canContinue: Boolean get() = cameraMicGranted
     val complete: Boolean get() = notificationsGranted && cameraMicGranted && batteryExempt
 }
+
+private val DONE_GREEN = Color(0xFF7FD67F)
 
 const val OEM_TIPS_URL = "https://dontkillmyapp.com"
 
@@ -105,7 +109,7 @@ private fun Step(title: String, body: String, done: Boolean, tag: String, onActi
             Text(body, color = Color.White.copy(alpha = 0.7f))
         }
         if (done) {
-            Text("Done", color = Color(0xFF7FD67F), modifier = Modifier.testTag("${tag}_done"))
+            Text("Done", color = DONE_GREEN, modifier = Modifier.testTag("${tag}_done"))
         } else {
             Button(onClick = onAction, modifier = Modifier.testTag("${tag}_action")) { Text("Allow") }
         }

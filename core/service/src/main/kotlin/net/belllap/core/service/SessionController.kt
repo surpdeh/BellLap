@@ -12,7 +12,7 @@ import net.belllap.core.statemachine.SessionConfig
 import net.belllap.core.statemachine.SessionMachine
 import net.belllap.core.statemachine.State
 
-/** Whether the session needs a partial wake lock. Only ARMED and ACQUISITION do (the review overlay does not change that). */
+/** Whether the session needs a partial wake lock. Only ARMED and ACQUISITION do; the review overlay changes nothing. */
 fun wakeLockRequired(state: State): Boolean {
     val inner = if (state is State.Review) state.underlying else state
     return inner == State.Armed || inner is State.Acquisition

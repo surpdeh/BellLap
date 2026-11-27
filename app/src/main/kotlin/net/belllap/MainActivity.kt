@@ -1,13 +1,13 @@
 package net.belllap
 
+import android.Manifest
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
-import android.Manifest
-import android.view.WindowManager
 import android.provider.Settings
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -69,6 +69,9 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun onboardingDone(vararg ok: Boolean) = ok.all { it }
+
+    @Suppress("LongMethod")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val repo = SettingsRepository(settingsStore)
@@ -92,9 +95,10 @@ class MainActivity : ComponentActivity() {
                 val notifLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
                     notifications = notificationsGranted()
                 }
-                val batteryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-                    battery = batteryExempt()
-                }
+                val batteryLauncher =
+                    rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+                        battery = batteryExempt()
+                    }
                 val sessionState by SessionForegroundService.state.collectAsState()
                 val dimmed = dimmedStandby(sessionState)
                 LaunchedEffect(dimmed) { applyDimming(dimmed) }
@@ -105,7 +109,7 @@ class MainActivity : ComponentActivity() {
                     )
                     return@MaterialTheme
                 }
-                if (!onboarded && !(granted && notifications && battery)) {
+                if (!onboarded && !onboardingDone(granted, notifications, battery)) {
                     OnboardingScreen(
                         status = OnboardingStatus(notifications, granted, battery),
                         onRequestNotifications = {
