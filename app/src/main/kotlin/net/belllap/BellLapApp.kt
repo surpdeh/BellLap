@@ -22,7 +22,8 @@ class BellLapApp : Application() {
     lateinit var eventLog: EventLog
         private set
 
-    private val classifier: BellClassifier by lazy { YamnetBellClassifier.loadOrFallback(this) }
+    /** Stage 1 of the bell cascade, loaded once (it maps a 4 MB model). Shared by the session and Replay. */
+    val bellClassifier: BellClassifier by lazy { YamnetBellClassifier.loadOrFallback(this) }
 
     /** The session lives as long as the process for now; F13 moves it into the foreground service. */
     val session: SessionController by lazy {
@@ -33,7 +34,7 @@ class BellLapApp : Application() {
                 val source = AudioInput.choose(AudioInput.unprocessedSupported(this))
                 MicAudioSource(AudioRecordPcmRecorder(source))
             },
-            classifier = { classifier },
+            classifier = { bellClassifier },
             log = EventLogSessionLog(eventLog),
             audioDispatcher = Dispatchers.IO,
         )

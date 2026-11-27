@@ -220,9 +220,10 @@ Each feature becomes one GitHub issue, `[Fxx] Title`, with acceptance criteria a
   - A JSONL structured event log of state transitions, detector scores and device info.
   - A Timber rolling file tree.
   - `ApplicationExitInfo` capture.
-- [ ] **F24 Replay mode (debug builds):** ([#8](https://github.com/surpdeh/belllap/issues/8))
+- [x] **F24 Replay mode (debug builds):** ([#8](https://github.com/surpdeh/belllap/issues/8))
   - Runs the whole pipeline (state machine and detectors) on a chosen MP4 and WAV, instead of the camera and mic.
   - This is the main way to verify on the emulator and in the field.
+  - `:core:replay` holds the pure-Kotlin `ReplaySession` (PTS-merged audio and video, fast or real time). The debug-only `DebugEntry` (`app/src/debug`) picks the generated `race_synth` fixture or an MP4 and WAV through SAF. Detectors are label-driven stubs until F14, F16 and F18; picked files run with no detectors.
 
 ### M1: MVP
 

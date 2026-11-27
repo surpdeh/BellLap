@@ -24,6 +24,7 @@ include(
     ":app",
     ":core:model",
     ":core:statemachine",
+    ":core:replay",
     ":core:service",
     ":core:log",
     ":audio:source",
