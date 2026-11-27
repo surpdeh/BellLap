@@ -55,6 +55,7 @@ class MainActivity : ComponentActivity() {
                     granted = allGranted()
                     rationale = shouldShowRationale()
                 }
+                Box {
                 SetupScreen(
                     settings = settings,
                     capabilities = capabilities,
@@ -75,6 +76,8 @@ class MainActivity : ComponentActivity() {
                         }
                     },
                 )
+                DebugEntry()
+                }
             }
         }
     }
