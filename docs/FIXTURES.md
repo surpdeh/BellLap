@@ -44,6 +44,7 @@ Steps:
 
 1. Extract frames, e.g. `ffmpeg -i clip.mp4 -vf format=gray <name>_frames/frame_%05d.png` and audio `ffmpeg -i clip.mp4 -ar 16000 -ac 1 <name>.wav`.
 2. Label by stepping frame by frame; label a crossing on the first frame the wheel touches the line.
+   For a bell-only audio clip, `scripts/fixtures/clip-bell.sh INPUT START_S DURATION_S NAME [STRIKE_S ...]` cuts the clip to 16 kHz mono and writes `labels.json`. Run it without strike times first: it prints candidate onsets to check by ear.
 3. Validate: `Labels.parse` rejects unsorted or overlapping labels, and `replayReal` fails fast on a malformed file.
 4. Upload the directory to `golden/` (golden set, under about 2 GB) or another prefix for the larger set.
 
