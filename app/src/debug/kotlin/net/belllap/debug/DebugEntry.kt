@@ -64,12 +64,12 @@ private fun ReplayScreen(onClose: () -> Unit) {
     val context = LocalContext.current
     val controller = remember { ReplayController((context.applicationContext as BellLapApp).eventLog) }
     val scope = rememberCoroutineScope()
-    var fast by remember { mutableStateOf(true) }
+    var realTime by remember { mutableStateOf(false) }
     var video by remember { mutableStateOf<Uri?>(null) }
     var audio by remember { mutableStateOf<Uri?>(null) }
     val pickVideo = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { video = it ?: video }
     val pickAudio = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { audio = it ?: audio }
-    val speed = if (fast) ReplaySpeed.FAST else ReplaySpeed.REAL_TIME
+    val speed = if (realTime) ReplaySpeed.REAL_TIME else ReplaySpeed.FAST
 
     Column(
         Modifier
@@ -93,9 +93,14 @@ private fun ReplayScreen(onClose: () -> Unit) {
             Text(controller.status, color = Color.White, modifier = Modifier.testTag(ReplayTags.STATUS))
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Switch(fast, { fast = it }, enabled = !controller.running, modifier = Modifier.testTag(ReplayTags.SPEED))
+            Switch(
+                realTime,
+                { realTime = it },
+                enabled = !controller.running,
+                modifier = Modifier.testTag(ReplayTags.SPEED),
+            )
             Text(
-                if (fast) "As fast as possible" else "Real time",
+                if (realTime) "Real time" else "As fast as possible",
                 color = Color.White,
                 modifier = Modifier.padding(8.dp),
             )

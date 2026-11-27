@@ -49,12 +49,14 @@ class ReplayRaceSynthTest {
     @Test
     fun journeyAtRealTimeShowsEveryMode() {
         TestEvidence.awaitPreviewContent { timeoutMs, condition -> composeRule.waitUntil(timeoutMs, condition) }
+        Thread.sleep(HOLD_MS) // let the preview settle, as LaunchTest does
+        TestEvidence.awaitPreviewContent { timeoutMs, condition -> composeRule.waitUntil(timeoutMs, condition) }
         TestEvidence.screenshot("10-journey-setup-with-debug-entry")
         composeRule.onNodeWithTag(ReplayTags.OPEN).performClick()
         composeRule.waitForIdle()
         TestEvidence.screenshot("11-journey-replay-menu")
 
-        composeRule.onNodeWithTag(ReplayTags.SPEED).performClick() // fast -> real time
+        composeRule.onNodeWithTag(ReplayTags.SPEED).performClick() // off (fast) -> on (real time)
         composeRule.waitForIdle()
         TestEvidence.screenshot("12-journey-real-time-selected")
 
