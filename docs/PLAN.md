@@ -228,7 +228,7 @@ Each feature becomes one GitHub issue, `[Fxx] Title`, with acceptance criteria a
 
 Setup and capture:
 
-- [ ] **F10 Camera setup screen:** ([#9](https://github.com/surpdeh/belllap/issues/9)) live preview; settings overlay with camera, resolution, 30/60 fps, automations, flag timeout and alerts; settings persisted with DataStore; mode status overlay.
+- [x] **F10 Camera setup screen:** ([#9](https://github.com/surpdeh/belllap/issues/9)) live preview; settings overlay with camera, resolution, 30/60 fps, automations, flag timeout and alerts; settings persisted with DataStore; mode status overlay.
 - [ ] **F11 Finish-line drawing:** ([#10](https://github.com/surpdeh/belllap/issues/10)) draw a line with touch, then drag its endpoints to refine it. Stored in normalised coordinates and persisted.
 - [ ] **F12 Automatic white-line detection:** ([#11](https://github.com/surpdeh/belllap/issues/11)) a suggested line with a confidence score. The user can accept or edit it. JVM tests run on fixture stills.
 - [ ] **F13 Session foreground service and standby:** ([#12](https://github.com/surpdeh/belllap/issues/12))

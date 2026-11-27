@@ -24,9 +24,75 @@ object TestEvidence {
         val bitmap = checkNotNull(InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()) {
             "UiAutomation.takeScreenshot() returned null"
         }
+        check(!bitmap.isBlack()) {
+            "Screenshot '$name' is entirely black: display off, locked, or a headless emulator image"
+        }
         val file = File(directory(), "$name.png")
         FileOutputStream(file).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
         Log.i(TAG, "Saved ${file.absolutePath}")
         return file
     }
+
+    /**
+     * Waits until the middle band of the screen (where the camera preview sits, clear of the overlays)
+     * has visible content. [waitUntil] must pump the Compose test clock, for example
+     * `composeRule::waitUntil`: the v2 rule runs coroutines on a StandardTestDispatcher, so a plain
+     * sleep loop would starve the camera bind that produces the preview.
+     * Fails if the preview never renders within [timeoutMs].
+     */
+    fun awaitPreviewContent(
+        timeoutMs: Long = PREVIEW_TIMEOUT_MS,
+        waitUntil: (timeoutMs: Long, condition: () -> Boolean) -> Unit,
+    ) {
+        val uiAutomation = InstrumentationRegistry.getInstrumentation().uiAutomation
+        try {
+            waitUntil(timeoutMs) { uiAutomation.takeScreenshot()?.middleBandHasContent() == true }
+        } catch (e: Throwable) {
+            // Keep what the screen showed, so the evidence explains the failure.
+            runCatching { screenshot("preview-timeout") }
+            logBlockedThreads()
+            throw IllegalStateException("Camera preview never rendered within ${timeoutMs}ms", e)
+        }
+    }
+
+    /** Logs the stacks of the main and CameraX threads, so a hung camera init shows where it is stuck. */
+    private fun logBlockedThreads() {
+        for ((thread, stack) in Thread.getAllStackTraces()) {
+            if (thread.name != "main" && !thread.name.contains("Camera", ignoreCase = true)) continue
+            val frames = stack.take(MAX_STACK_FRAMES).joinToString("\n") { "    at $it" }
+            Log.e("PreviewHang", "thread '${thread.name}' state=${thread.state}\n$frames")
+        }
+    }
+
+    private fun Bitmap.middleBandHasContent(): Boolean {
+        for (y in (height * BAND_START).toInt() until (height * BAND_END).toInt() step SAMPLE_STEP) {
+            for (x in 0 until width step SAMPLE_STEP) {
+                val p = getPixel(x, y)
+                val brightest = maxOf(p shr RED_SHIFT and CHANNEL, p shr GREEN_SHIFT and CHANNEL, p and CHANNEL)
+                if (brightest > CONTENT_THRESHOLD) return true
+            }
+        }
+        return false
+    }
+
+    private fun Bitmap.isBlack(): Boolean {
+        val step = SAMPLE_STEP
+        for (y in 0 until height step step) {
+            for (x in 0 until width step step) {
+                if (getPixel(x, y) and RGB_MASK != 0) return false
+            }
+        }
+        return true
+    }
+
+    private const val SAMPLE_STEP = 16
+    private const val MAX_STACK_FRAMES = 25
+    private const val RGB_MASK = 0x00FFFFFF
+    private const val PREVIEW_TIMEOUT_MS = 30_000L
+    private const val BAND_START = 0.3f
+    private const val BAND_END = 0.7f
+    private const val CONTENT_THRESHOLD = 24
+    private const val CHANNEL = 0xFF
+    private const val RED_SHIFT = 16
+    private const val GREEN_SHIFT = 8
 }
