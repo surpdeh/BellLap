@@ -67,7 +67,6 @@ fun FinishLineOverlay(
         val (origin, size) = fitRect(boxW, boxH, aspect)
 
         fun toScreen(p: NormPoint) = Offset(origin.x + p.x * size.width, origin.y + p.y * size.height)
-
         fun toDisplayNorm(o: Offset) =
             NormPoint.clampOf((o.x - origin.x) / size.width, (o.y - origin.y) / size.height)
 

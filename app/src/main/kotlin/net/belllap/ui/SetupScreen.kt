@@ -95,24 +95,22 @@ fun SetupScreen(
                     .padding(16.dp)
                     .testTag(TestTags.SETTINGS_BUTTON),
             ) { Text(if (settingsOpen) "Close" else "Settings") }
-            if (!settingsOpen) {
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .windowInsetsPadding(WindowInsets.safeDrawing)
-                        .padding(start = 16.dp, top = 64.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
+            if (!settingsOpen) Column(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
+                    .padding(start = 16.dp, top = 64.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Button(
+                    onClick = { lineEditing = !lineEditing },
+                    modifier = Modifier.testTag(TestTags.LINE_BUTTON),
+                ) { Text(if (lineEditing) "Done" else "Finish line") }
+                if (lineEditing && settings.finishLine != null) {
                     Button(
-                        onClick = { lineEditing = !lineEditing },
-                        modifier = Modifier.testTag(TestTags.LINE_BUTTON),
-                    ) { Text(if (lineEditing) "Done" else "Finish line") }
-                    if (lineEditing && settings.finishLine != null) {
-                        Button(
-                            onClick = { onFinishLineChange(null) },
-                            modifier = Modifier.testTag(TestTags.LINE_CLEAR_BUTTON),
-                        ) { Text("Clear") }
-                    }
+                        onClick = { onFinishLineChange(null) },
+                        modifier = Modifier.testTag(TestTags.LINE_CLEAR_BUTTON),
+                    ) { Text("Clear") }
                 }
             }
         }
