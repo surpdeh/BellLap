@@ -21,7 +21,10 @@ import androidx.compose.runtime.setValue
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import net.belllap.capture.PreviewSession
 import net.belllap.core.model.CameraCapabilities
 import net.belllap.core.model.CaptureSettings
 import net.belllap.core.model.PreviewMapping
@@ -32,7 +35,9 @@ import net.belllap.ui.CameraPreview
 import net.belllap.ui.REQUIRED_PERMISSIONS
 import net.belllap.ui.SetupScreen
 import net.belllap.ui.StandbyScreen
+import net.belllap.ui.detectMessageFor
 import net.belllap.ui.permissionUi
+import net.belllap.vision.finishline.WhiteLineDetector
 
 private val android.content.Context.settingsStore by preferencesDataStore("capture_settings")
 
@@ -57,6 +62,7 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(settings) { session.updateSettings(settings) }
                 var capabilities by remember { mutableStateOf<CameraCapabilities?>(null) }
                 var mapping by remember { mutableStateOf(PreviewMapping()) }
+                var detectMessage by remember { mutableStateOf<String?>(null) }
                 var settingsOpen by rememberSaveable { mutableStateOf(false) }
                 var asked by rememberSaveable { mutableStateOf(false) }
                 var granted by remember { mutableStateOf(allGranted()) }
@@ -83,6 +89,8 @@ class MainActivity : ComponentActivity() {
                             onSettingsChange = { new -> scope.launch { repo.update { new } } },
                             onRequestPermissions = { launcher.launch(REQUIRED_PERMISSIONS) },
                             onStandby = session::standby,
+                            detectMessage = detectMessage,
+                            onDetectLine = { scope.launch { detectMessage = detectAndStoreLine(repo) } },
                             onOpenSystemSettings = {
                                 val uri = Uri.fromParts("package", packageName, null)
                                 startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, uri))
@@ -100,5 +108,13 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    /** Grabs a frame, runs the F12 detector and stores a found line; returns the message to show. */
+    private suspend fun detectAndStoreLine(repo: SettingsRepository): String {
+        val frame = PreviewSession.grabFrame()
+        val found = frame?.let { withContext(Dispatchers.Default) { WhiteLineDetector.detect(it) } }
+        found?.let { s -> repo.update { it.copy(finishLine = s.line) } }
+        return detectMessageFor(frame != null, found)
     }
 }

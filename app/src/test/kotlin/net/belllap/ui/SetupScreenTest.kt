@@ -1,6 +1,7 @@
 package net.belllap.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextEquals
@@ -10,7 +11,6 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipe
-import androidx.compose.ui.geometry.Offset
 import com.github.takahirom.roborazzi.captureRoboImage
 import net.belllap.core.model.BellSensitivity
 import net.belllap.core.model.CameraCapabilities
@@ -222,5 +222,40 @@ class SetupScreenTest {
         composeRule.onNodeWithTag(TestTags.LINE_BUTTON).performClick()
         composeRule.onNodeWithTag(TestTags.SETUP_SCREEN)
             .captureRoboImage("src/test/screenshots/setup_finish_line_editing.png")
+    }
+
+    @Test
+    fun detectButtonRequestsDetectionAndEntersEditing() {
+        var detects = 0
+        composeRule.setContent {
+            SetupScreen(
+                settings = CaptureSettings(finishLine = stored),
+                capabilities = caps,
+                permission = PermissionUi.GRANTED,
+                settingsOpen = false,
+                onSettingsOpenChange = {},
+                onSettingsChange = {},
+                onFinishLineChange = {},
+                onRequestPermissions = {},
+                onOpenSystemSettings = {},
+                onDetectLine = { detects++ },
+                detectMessage = "Line suggested (84% sure). Drag the ends to adjust.",
+                preview = { CameraPreviewPlaceholder() },
+            )
+        }
+        composeRule.onNodeWithTag(TestTags.DETECT_BUTTON).performClick()
+        assertEquals(1, detects)
+        composeRule.onNodeWithTag(TestTags.LINE_EDITOR).assertIsDisplayed()
+        composeRule.onNodeWithTag(TestTags.DETECT_MESSAGE).assertIsDisplayed()
+        composeRule.onNodeWithTag(TestTags.SETUP_SCREEN)
+            .captureRoboImage("src/test/screenshots/setup_detect_line.png")
+    }
+
+    @Test
+    fun detectMessagesCoverEveryOutcome() {
+        assertTrue(detectMessageFor(false, null).startsWith("No camera frame"))
+        assertTrue(detectMessageFor(true, null).startsWith("No white line"))
+        val s = net.belllap.vision.finishline.LineSuggestion(stored, 0.84f)
+        assertTrue(detectMessageFor(true, s).contains("84%"))
     }
 }

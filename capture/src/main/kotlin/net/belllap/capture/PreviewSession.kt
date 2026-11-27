@@ -5,6 +5,8 @@ import android.util.Log
 import android.util.Range
 import android.util.Size
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.core.SurfaceRequest
 import androidx.camera.core.resolutionselector.ResolutionSelector
@@ -12,11 +14,15 @@ import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 import net.belllap.core.model.CameraCapabilities
 import net.belllap.core.model.CameraFacing
 import net.belllap.core.model.CaptureSettings
+import net.belllap.vision.core.Frame
 import java.util.concurrent.ExecutionException
+import java.util.concurrent.Executors
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -78,11 +84,47 @@ object PreviewSession {
                     onSurfaceRequest(request)
                 }
             }
+        val analysis = ImageAnalysis.Builder()
+            .setResolutionSelector(resolution)
+            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            .build()
+            .also { it.setAnalyzer(analysisExecutor, ::onAnalysisFrame) }
         provider.unbindAll()
-        val camera = provider.bindToLifecycle(owner, selector, preview)
+        val camera = provider.bindToLifecycle(owner, selector, preview, analysis)
         Log.i(TAG, "bind: bound, cameraId=${camera.cameraInfo}")
         return probeCapabilities(camera.cameraInfo)
     }
+
+    private val analysisExecutor = Executors.newSingleThreadExecutor()
+
+    @Volatile
+    private var wanted: CompletableDeferred<Frame>? = null
+
+    /**
+     * The next camera frame as unrotated sensor luma, or null if none arrives within [timeoutMs] (camera not
+     * bound). Frames are copied only while a caller is waiting, so the idle preview pays nothing for this.
+     */
+    suspend fun grabFrame(timeoutMs: Long = GRAB_TIMEOUT_MS): Frame? {
+        val request = CompletableDeferred<Frame>()
+        wanted = request
+        return try {
+            withTimeoutOrNull(timeoutMs) { request.await() }
+        } finally {
+            if (wanted === request) wanted = null
+        }
+    }
+
+    private fun onAnalysisFrame(image: ImageProxy) {
+        image.use {
+            val request = wanted ?: return
+            val plane = it.planes[0]
+            val buffer = plane.buffer
+            val luma = ByteArray(buffer.remaining()).also { out -> buffer.get(out) }
+            request.complete(Frame(it.imageInfo.timestamp, it.width, it.height, plane.rowStride, luma))
+        }
+    }
+
+    private const val GRAB_TIMEOUT_MS = 3000L
 
     private suspend fun awaitProvider(context: Context): ProcessCameraProvider =
         suspendCancellableCoroutine { cont ->
