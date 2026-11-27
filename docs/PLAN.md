@@ -110,7 +110,7 @@ Full proof points are in [research/technical-architecture.md](research/technical
 
 | Concern | Decision |
 |---|---|
-| Platform | Kotlin, Jetpack Compose, **minSdk 29**, targetSdk 36 (plan for 37), AGP 9.x (built-in Kotlin), Gradle 9.x, JDK 25 toolchain, Java 21 bytecode |
+| Platform | Kotlin, Jetpack Compose, **minSdk 29**, targetSdk 36 (plan for 37, see §2.3), AGP 9.x (built-in Kotlin), Gradle 9.x, JDK 25 toolchain, Java 21 bytecode |
 | Session lifetime | One `SessionForegroundService` with `foregroundServiceType="microphone\|camera"`, **started from the visible UI** when the user taps Standby. A camera or microphone FGS cannot be created from the background on Android 14+. Default standby is dimmed and kept on. |
 | Audio | `AudioRecord` at 16 kHz mono, using the `UNPROCESSED` source if supported and `MIC` otherwise. Stage-0 FFT gate on 1.5–8 kHz tonal decaying peaks, then YAMNet (LiteRT) bell classes on candidates, then a persistence rule (N hits in 3 s). |
 | Camera (MVP) | CameraX 1.7 `SessionConfig` with Preview, ImageAnalysis (~640×480 luma) and VideoCapture at 30/60 fps. Frame-rate range set explicitly. |
@@ -150,7 +150,41 @@ backend/worker       Cloudflare Worker (GitHub App issue proxy + R2 presign)
 3. Bunched riders merge in the slit-scan. Mitigation: review is designed around human confirmation.
 4. Chequered flag robustness: small or furled flags, chequered banners. No public dataset exists.
 5. Battery, thermal and storage use over long events.
-6. Platform drift: Android 17 audio hardening, Play wake-lock vitals, 16 KB page alignment.
+6. Platform drift: Android 17 audio hardening (§2.3), Play wake-lock vitals, 16 KB page alignment.
+
+### 2.3 Moving to targetSdk 37 (Android 17)
+
+We stay on targetSdk 36 for now. Google Play accepts it until about August 2027. CI lint has `OldTargetApi` disabled for this reason. Targeting 37 changes behaviour **only on Android 17 devices**. Phones on API 29–36 are not affected. Source: [behaviour changes for apps targeting 17](https://developer.android.com/about/versions/17/behavior-changes-17) and [for all apps](https://developer.android.com/about/versions/17/behavior-changes-all).
+
+**Changes that affect BellLap at target 37:**
+
+- **Background audio hardening.** Audio playback, audio focus and volume changes from the background need a foreground service with while-in-use capability. The beeps (`BeepSink`/`BeepPlayer`) must come from `SessionForegroundService` started from the visible UI (already an architecture rule). Otherwise they fail silently.
+- **Large screens (sw ≥ 600dp).** Orientation locks, resizability limits and aspect-ratio limits are always ignored. The Android 16 opt-out is gone. Capture and review UIs must cope with rotation and freeform windows on tablets and unfolded foldables. Phones are not affected.
+- **Lock-free `MessageQueue`.** Code or test tooling that reflects on its private internals can break. Keep Espresso, androidx.test and Robolectric current.
+- **`static final` fields cannot be changed by reflection or JNI.** Changing one throws `IllegalAccessException` or crashes. This mostly affects old libraries or mocking tricks.
+- **Native libraries loaded with `System.load()` must be read-only files.** Libraries in the APK (`System.loadLibrary`, e.g. LiteRT) are fine.
+
+**Changes that probably do not affect BellLap:**
+
+- `ACCESS_LOCAL_NETWORK` permission for LAN access
+- certificate transparency on by default (the Worker/R2 endpoints have valid public certificates)
+- Encrypted Client Hello
+- widget bitmap memory limit
+- three-hour hold on SMS one-time codes
+- background activity launch limits extended to `IntentSender`
+- contacts-provider column removals
+- Bluetooth RFCOMM `read()` returning −1
+- a 50k key limit in Keystore
+
+**Changes on Android 17 at any targetSdk (we already get these):**
+
+- **Memory limits based on device RAM.** Affected processes exit with `REASON_OTHER` / `MemoryLimiter:AnonSwap`. This is relevant to long recordings. F22's `ApplicationExitInfo` capture should record it.
+- **Audio calls outside a valid lifecycle fail silently.** Playback, focus and volume calls return `AUDIOFOCUS_REQUEST_FAILED`.
+- **The keyboard is not restored after rotation** for activities that do not handle the configuration change.
+- **Cross-profile loopback traffic is blocked.**
+- **Planned for later releases:** the `usesCleartextTraffic` deprecation, and the end of implicit URI grants for `ACTION_IMAGE_CAPTURE`/`SEND` in Android 18. Set grant flags explicitly.
+
+**When to switch:** once `SessionForegroundService`, the beeps and the capture screen exist. Then add an Android 17 (API 37) emulator run to `emulator-e2e`. Before bumping, check that beeps work with the screen off, that capture works in portrait and freeform on a tablet profile, and that instrumented tests pass. Then set targetSdk 37 (and compileSdk 37) and re-enable `OldTargetApi`.
 
 ---
 
