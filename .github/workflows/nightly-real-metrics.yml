@@ -1,0 +1,42 @@
+name: Nightly real-footage metrics
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-metrics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@v5
+      - name: Fetch real fixtures (skips if secrets are absent)
+        env:
+          FIXTURES_S3_BUCKET: ${{ secrets.FIXTURES_S3_BUCKET }}
+          FIXTURES_S3_ENDPOINT: ${{ secrets.FIXTURES_S3_ENDPOINT }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.FIXTURES_S3_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.FIXTURES_S3_SECRET_ACCESS_KEY }}
+        run: scripts/fixtures/fetch.sh
+      - name: Replay real fixtures
+        run: ./gradlew :testing:harness:replayReal | tee real-metrics.txt
+      - name: Summary
+        run: |
+          {
+            echo "### Real-footage metrics"
+            echo '```'
+            cat real-metrics.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v5
+        with:
+          name: real-metrics
+          path: testing/harness/build/reports/real-metrics.json

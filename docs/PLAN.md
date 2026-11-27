@@ -96,6 +96,7 @@ The following were **not requested**: start-list import, CSV/PDF results export,
 ### 1.7 Open questions
 
 - [ ] **Repo visibility:** you said "private", but `surpdeh/belllap` is currently **public**.
+  - **Decision (F03b): a private S3-compatible bucket (Cloudflare R2)**, fetched by `scripts/fixtures/fetch.sh`; see [FIXTURES.md](FIXTURES.md). LFS only once the repo is private.
   - Until it is made private, real race footage and field-report media must **not** be committed (no LFS). They live only in a private bucket.
   - The plan assumes the repo becomes private, or that footage stays in the bucket either way.
 - [ ] **Test footage:** the plan uses a small labelled golden set (LFS once the repo is private, otherwise the bucket) plus an optional larger bucket. Bucket choice and credentials are still to be decided (F03b).
@@ -109,7 +110,7 @@ Full proof points are in [research/technical-architecture.md](research/technical
 
 | Concern | Decision |
 |---|---|
-| Platform | Kotlin, Jetpack Compose, **minSdk 29**, targetSdk 36 (plan for 37), AGP 8.x, JDK 21 |
+| Platform | Kotlin, Jetpack Compose, **minSdk 29**, targetSdk 36 (plan for 37, see §2.3), AGP 9.x (built-in Kotlin), Gradle 9.x, JDK 25 toolchain, Java 21 bytecode |
 | Session lifetime | One `SessionForegroundService` with `foregroundServiceType="microphone\|camera"`, **started from the visible UI** when the user taps Standby. A camera or microphone FGS cannot be created from the background on Android 14+. Default standby is dimmed and kept on. |
 | Audio | `AudioRecord` at 16 kHz mono, using the `UNPROCESSED` source if supported and `MIC` otherwise. Stage-0 FFT gate on 1.5–8 kHz tonal decaying peaks, then YAMNet (LiteRT) bell classes on candidates, then a persistence rule (N hits in 3 s). |
 | Camera (MVP) | CameraX 1.7 `SessionConfig` with Preview, ImageAnalysis (~640×480 luma) and VideoCapture at 30/60 fps. Frame-rate range set explicitly. |
@@ -149,7 +150,41 @@ backend/worker       Cloudflare Worker (GitHub App issue proxy + R2 presign)
 3. Bunched riders merge in the slit-scan. Mitigation: review is designed around human confirmation.
 4. Chequered flag robustness: small or furled flags, chequered banners. No public dataset exists.
 5. Battery, thermal and storage use over long events.
-6. Platform drift: Android 17 audio hardening, Play wake-lock vitals, 16 KB page alignment.
+6. Platform drift: Android 17 audio hardening (§2.3), Play wake-lock vitals, 16 KB page alignment.
+
+### 2.3 Moving to targetSdk 37 (Android 17)
+
+We stay on targetSdk 36 for now. Google Play accepts it until about August 2027. CI lint has `OldTargetApi` disabled for this reason. Targeting 37 changes behaviour **only on Android 17 devices**. Phones on API 29–36 are not affected. Source: [behaviour changes for apps targeting 17](https://developer.android.com/about/versions/17/behavior-changes-17) and [for all apps](https://developer.android.com/about/versions/17/behavior-changes-all).
+
+**Changes that affect BellLap at target 37:**
+
+- **Background audio hardening.** Audio playback, audio focus and volume changes from the background need a foreground service with while-in-use capability. The beeps (`BeepSink`/`BeepPlayer`) must come from `SessionForegroundService` started from the visible UI (already an architecture rule). Otherwise they fail silently.
+- **Large screens (sw ≥ 600dp).** Orientation locks, resizability limits and aspect-ratio limits are always ignored. The Android 16 opt-out is gone. Capture and review UIs must cope with rotation and freeform windows on tablets and unfolded foldables. Phones are not affected.
+- **Lock-free `MessageQueue`.** Code or test tooling that reflects on its private internals can break. Keep Espresso, androidx.test and Robolectric current.
+- **`static final` fields cannot be changed by reflection or JNI.** Changing one throws `IllegalAccessException` or crashes. This mostly affects old libraries or mocking tricks.
+- **Native libraries loaded with `System.load()` must be read-only files.** Libraries in the APK (`System.loadLibrary`, e.g. LiteRT) are fine.
+
+**Changes that probably do not affect BellLap:**
+
+- `ACCESS_LOCAL_NETWORK` permission for LAN access
+- certificate transparency on by default (the Worker/R2 endpoints have valid public certificates)
+- Encrypted Client Hello
+- widget bitmap memory limit
+- three-hour hold on SMS one-time codes
+- background activity launch limits extended to `IntentSender`
+- contacts-provider column removals
+- Bluetooth RFCOMM `read()` returning −1
+- a 50k key limit in Keystore
+
+**Changes on Android 17 at any targetSdk (we already get these):**
+
+- **Memory limits based on device RAM.** Affected processes exit with `REASON_OTHER` / `MemoryLimiter:AnonSwap`. This is relevant to long recordings. F22's `ApplicationExitInfo` capture should record it.
+- **Audio calls outside a valid lifecycle fail silently.** Playback, focus and volume calls return `AUDIOFOCUS_REQUEST_FAILED`.
+- **The keyboard is not restored after rotation** for activities that do not handle the configuration change.
+- **Cross-profile loopback traffic is blocked.**
+- **Planned for later releases:** the `usesCleartextTraffic` deprecation, and the end of implicit URI grants for `ACTION_IMAGE_CAPTURE`/`SEND` in Android 18. Set grant flags explicitly.
+
+**When to switch:** once `SessionForegroundService`, the beeps and the capture screen exist. Then add an Android 17 (API 37) emulator run to `emulator-e2e`. Before bumping, check that beeps work with the screen off, that capture works in portrait and freeform on a tablet profile, and that instrumented tests pass. Then set targetSdk 37 (and compileSdk 37) and re-enable `OldTargetApi`.
 
 ---
 
@@ -176,8 +211,8 @@ Each feature becomes one GitHub issue, `[Fxx] Title`, with acceptance criteria a
   - `FrameSource` and `AudioSource` interfaces with file-backed implementations.
   - **Synthetic fixture generators**: a bell-tone WAV with crowd or pink noise, a chequered-flag video, and riders crossing a line. These work with no real footage.
   - A fixture manifest with labels.
-- [ ] **F03b Real footage pipeline:** ([#5](https://github.com/surpdeh/belllap/issues/5)) a private bucket (or LFS once the repo is private), a downloader script with a CI secret, a labelling format (`labels.json`: bell times, flag intervals, crossing frames), and contribution docs.
-- [ ] **F04 Session state machine:** ([#6](https://github.com/surpdeh/belllap/issues/6))
+- [x] **F03b Real footage pipeline:** ([#5](https://github.com/surpdeh/belllap/issues/5)) a private bucket (or LFS once the repo is private), a downloader script with a CI secret, a labelling format (`labels.json`: bell times, flag intervals, crossing frames), and contribution docs ([FIXTURES.md](FIXTURES.md)).
+- [x] **F04 Session state machine:** ([#6](https://github.com/surpdeh/belllap/issues/6))
   - Pure-Kotlin reducer for SETUP, STANDBY, ARMING, ARMED, ACQUISITION and REVIEW, with manual overrides and timeouts.
   - Exhaustive unit tests using virtual time.
   - Optional TLA+ check of the core properties (pstack `/create-formal-verification-skill`).
@@ -277,7 +312,7 @@ Bug reports:
 
 | Workflow | Trigger | Jobs |
 |---|---|---|
-| `ci.yml` | PR, push to `main` | **build-test:** JDK 21 and Gradle cache; `./gradlew lintDebug detekt testDebugUnitTest verifyRoborazziDebug assembleDebug`. Uploads the APK, JUnit and lint reports and Roborazzi screenshots, and writes a job summary. **emulator-e2e** (needs build-test): KVM plus `reactivecircus/android-emulator-runner` (API 34, ATD x86_64); `connectedDebugAndroidTest`, including the Replay e2e on fixtures; `adb screenrecord`; screenshots; logcat. Uploads all of these. **evidence-comment:** pushes PNG/GIF evidence to the `ci-evidence` branch under `pr-<n>/<sha>/` and upserts one PR comment that embeds them, with test totals and detector metrics. |
+| `ci.yml` | PR, push to `main` | **build-test:** JDK 25 and Gradle cache; `./gradlew lintDebug detekt testDebugUnitTest verifyRoborazziDebug assembleDebug`. Uploads the APK, JUnit and lint reports and Roborazzi screenshots, and writes a job summary. **emulator-e2e** (needs build-test): KVM plus `reactivecircus/android-emulator-runner` (API 34, ATD x86_64); `connectedDebugAndroidTest`, including the Replay e2e on fixtures; `adb screenrecord`; screenshots; logcat. Uploads all of these. **evidence-comment:** pushes PNG/GIF evidence to the `ci-evidence` branch under `pr-<n>/<sha>/` and upserts one PR comment that embeds them, with test totals and detector metrics. |
 | `detector-metrics.yml` | PR touching `audio/`, `vision/`, `testing/`; nightly | Runs the JVM replay harness on the synthetic and golden fixtures (and the full bucket set nightly, using a secret). Fails if a metric falls below its threshold in `testing/thresholds.json`. Posts a metrics table. |
 | `claude.yml` | `@claude` in an issue or PR comment, or issue labelled `agent:go` | `anthropics/claude-code-action` runs an agent that implements the issue, pushes a branch and opens a PR. Needs the `CLAUDE_CODE_OAUTH_TOKEN` (or `ANTHROPIC_API_KEY`) secret. |
 | `worker.yml` (F23) | PR touching `backend/` | `npm test` (vitest + miniflare). Runs `wrangler deploy` on main using the `CLOUDFLARE_API_TOKEN` secret. |
