@@ -17,8 +17,8 @@
     "R2_BUCKET_NAME": "belllap-reports",
     "CF_ACCOUNT_ID": "8e33116347c6438304959552670c559c",
     // Filled in once the Firebase project exists (see backend/README.md). Empty means the Worker answers 503.
-    "FIREBASE_PROJECT_NUMBER": "",
-    "FIREBASE_APP_ID": ""
+    "FIREBASE_PROJECT_NUMBER": "611005785266",
+    "FIREBASE_APP_ID": "1:611005785266:android:e0c5e11a28e61091ee15ab"
   }
   // Secrets (wrangler secret put): GITHUB_APP_ID, GITHUB_INSTALLATION_ID, GITHUB_APP_PRIVATE_KEY,
   // R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY.

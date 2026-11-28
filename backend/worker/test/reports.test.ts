@@ -368,7 +368,7 @@ describe('routing and configuration', () => {
     });
   }
 
-  it('fails closed with 503 on the deployed defaults (empty Firebase vars, no secrets)', async () => {
+  it('fails closed with 503 on the deployed defaults (no secrets set)', async () => {
     const res = await call('/v1/reports', { body: reportBody(), env });
     expect(res.status).toBe(503);
   });
