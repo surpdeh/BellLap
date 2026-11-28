@@ -286,7 +286,7 @@ Bug reports:
   - Consent screen before upload.
   - Upload progress and retry.
   - `:bugreport` is pure Kotlin/JVM: the `Caps` table (checked against the Worker's `caps.ts` by `CapsDriftTest`), `ReportDraft.validate()`, the persisted `QueuedReport` state machine (`report.json`, resumable and idempotent), `HttpReportApi` (F23 client over `HttpURLConnection`) and `ReportQueue`. `:testing:fakebackend` is a socket-based fake Worker (`com.sun.net.httpserver` is not on Android) shared by JVM tests and the emulator test. The app holds the screens (`BugReportScreen`, `BugReportConsentScreen`, `BugReportStatusScreen`, entry on SETUP only), the trace bundler, the MediaExtractor/MediaMuxer trimmer (cuts at the keyframe at or before the start, drops audio), WorkManager and the Firebase App Check (Play Integrity) token source.
-  - Send is disabled ("Bug reports are not configured in this build") until a build sets the Gradle properties `belllap.reportsUrl` and `belllap.firebaseApiKey`.
+  - Send is disabled ("Bug reports are not configured in this build") until the Gradle properties `belllap.reportsUrl` and `belllap.firebaseApiKey` are set (both are set in `gradle.properties`).
 - [ ] **F23 Bug report backend:** ([#23](https://github.com/surpdeh/belllap/issues/23))
   - Cloudflare Worker acting as a GitHub App, creating issues labelled `field-report`.
   - R2 presigned uploads.
