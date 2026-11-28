@@ -17,7 +17,7 @@ interface AcquisitionSink {
     /** PTS of the newest camera frame, or null while no frame has arrived. */
     fun latestFramePtsUs(): Long?
 
-    /** Starts the MP4 for acquisition [id]. Throws [RecordingUnavailableException] when it cannot. */
+    /** Starts the MP4 `acq_<id>.mp4` for acquisition [id]. Throws [RecordingUnavailableException] when it cannot. */
     fun start(id: String)
 
     /** Stops the MP4 of [id] and writes its `acq_<id>.json` from [sidecarJson]. */

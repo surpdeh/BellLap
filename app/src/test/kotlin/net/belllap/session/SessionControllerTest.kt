@@ -17,7 +17,12 @@ import net.belllap.audio.bell.BellTrace
 import net.belllap.audio.source.AudioSource
 import net.belllap.audio.source.PcmAudioSource
 import net.belllap.audio.source.PcmChunk
+import net.belllap.core.model.AcquisitionSink
 import net.belllap.core.model.CaptureSettings
+import net.belllap.core.model.FlagInterval
+import net.belllap.core.model.RecordingUnavailableException
+import net.belllap.core.model.Sidecar
+import net.belllap.core.model.SidecarDevice
 import net.belllap.core.model.VolumeKey
 import net.belllap.core.model.VolumeKeyAction
 import net.belllap.core.statemachine.Cue
@@ -28,10 +33,12 @@ import net.belllap.testing.fixtures.Fixtures
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.Collections
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SessionControllerTest {
     private val scope = CoroutineScope(Dispatchers.Default)
     private val transitions = Collections.synchronizedList(ArrayList<String>())
@@ -64,7 +71,38 @@ class SessionControllerTest {
         classifier = { AcceptAllClassifier },
         log = log,
         beeps = beeps,
+        sink = sink,
+        device = SidecarDevice("Acme", "Phone", 36),
+        appVersion = "9.9",
+        eventLabel = { "2026-11-28" },
     )
+
+    /** In-memory recorder: PTS is set by the test, and sidecars written by stop() become existing names. */
+    private class FakeSink : AcquisitionSink {
+        var free = Long.MAX_VALUE
+        var pts: Long? = 1_000L
+        var failStart: String? = null
+        val calls = mutableListOf<String>()
+        val sidecars = mutableListOf<Sidecar>()
+
+        override fun freeBytes() = free
+
+        override fun existingNames() = sidecars.map { it.name }
+
+        override fun latestFramePtsUs() = pts
+
+        override fun start(id: String) {
+            failStart?.let { throw RecordingUnavailableException(it) }
+            calls += "start:$id"
+        }
+
+        override fun stop(id: String, sidecarJson: String) {
+            calls += "stop:$id"
+            sidecars += Sidecar.decode(sidecarJson)
+        }
+    }
+
+    private val sink = FakeSink()
 
     private val silence = object : AudioSource {
         override val sampleRate = 16_000
@@ -88,7 +126,6 @@ class SessionControllerTest {
         assertEquals("stage0-only", c.bell.value.classifier)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun bellNowArmsByHandAndTheArmDelayEndsInArmed() = runTest {
         // The arm-delay timer's delay and the machine's clock both run on virtual time, so the test is not a race
@@ -250,7 +287,89 @@ class SessionControllerTest {
         assertEquals(40, c.alertVolumePercent)
     }
 
+    /** An ARMED controller on virtual time: Standby, Bell now, then the arm delay elapses. */
+    private suspend fun kotlinx.coroutines.test.TestScope.armed(): SessionController {
+        val c = controller(silence, scope = backgroundScope, nowMs = { testScheduler.currentTime })
+        c.updateSettings(CaptureSettings(bellAutomation = false))
+        c.standby()
+        c.bellNow()
+        advanceTimeBy(ARM_DELAY_MS)
+        runCurrent()
+        assertEquals(State.Armed, c.state.value)
+        return c
+    }
+
+    @Test
+    fun recordNowStartsAndStopStopsTheRecorderAndWritesTheSidecar() = runTest {
+        val c = armed()
+        assertTrue(sink.calls.isEmpty())
+        c.recordNow()
+        assertEquals(State.Acquisition(flagVisible = false), c.state.value)
+        assertEquals(1, sink.calls.size)
+        sink.pts = 5_000L
+        c.stop()
+        assertEquals(State.Armed, c.state.value)
+        assertEquals(listOf("start", "stop"), sink.calls.map { it.substringBefore(':') })
+        val sidecar = sink.sidecars.single()
+        assertEquals("2026-11-28 Finish 1", sidecar.name)
+        assertEquals(sink.calls[0].substringAfter(':'), sidecar.id)
+        assertEquals("acq_${sidecar.id}.mp4", sidecar.videoFile)
+        assertEquals(1_000L, sidecar.firstFramePtsUs)
+        assertEquals(30, sidecar.fps)
+        assertEquals("9.9", sidecar.appVersion)
+        assertEquals(emptyList<FlagInterval>(), sidecar.flagIntervals)
+        assertNull(c.notice.value)
+    }
+
+    @Test
+    fun flagVisibilityIsRecordedAsPtsIntervalsAndFinishesAreNumbered() = runTest {
+        val c = armed()
+        sink.pts = 2_000L
+        c.dispatch(Event.FlagSeen, "test")
+        sink.pts = 3_000L
+        c.dispatch(Event.FlagLost, "test")
+        sink.pts = 4_000L
+        c.dispatch(Event.FlagSeen, "test")
+        sink.pts = 6_000L
+        c.stop()
+        assertEquals(listOf(FlagInterval(2_000, 3_000), FlagInterval(4_000, 6_000)), sink.sidecars[0].flagIntervals)
+        c.recordNow()
+        c.stop()
+        assertEquals(listOf("2026-11-28 Finish 1", "2026-11-28 Finish 2"), sink.sidecars.map { it.name })
+    }
+
+    @Test
+    fun theFlagAbsentTimeoutStopsTheRecording() = runTest {
+        val c = armed()
+        c.recordNow()
+        advanceTimeBy(FLAG_ABSENT_MS)
+        runCurrent()
+        assertEquals(State.Armed, c.state.value)
+        assertEquals(listOf("start", "stop"), sink.calls.map { it.substringBefore(':') })
+    }
+
+    @Test
+    fun lowStorageRefusesTheRecordingWithAMessageAndReturnsToArmed() = runTest {
+        val c = armed()
+        sink.free = 1L
+        c.recordNow()
+        assertEquals(State.Armed, c.state.value)
+        assertTrue(sink.calls.isEmpty())
+        assertTrue(c.notice.value!!.startsWith("Not enough free storage"))
+    }
+
+    @Test
+    fun aRecorderThatCannotStartIsSurfacedNotCrashed() = runTest {
+        val c = armed()
+        sink.failStart = "Camera is not ready."
+        c.dispatch(Event.FlagSeen, "test")
+        assertEquals(State.Armed, c.state.value)
+        assertEquals("Camera is not ready.", c.notice.value)
+        assertTrue(sink.sidecars.isEmpty())
+    }
+
     private companion object {
+        const val FLAG_ABSENT_MS = 15_000L
         const val ARM_DELAY_MS = 10_000L
     }
 }
