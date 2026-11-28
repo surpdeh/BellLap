@@ -82,6 +82,13 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
+
+      # Host ffmpeg encodes race_synth for the replay tests (:app:raceSynthMedia, cached by Gradle) and turns the
+      # screen recording into a GIF. CI only; it is not shipped in the app. The apt install (15-35 s) runs in the
+      # background; the APK build below waits for it, because Gradle checks for ffmpeg while configuring.
+      - name: Install ffmpeg in the background
+        run: |
+          ( sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg; echo $? > ffmpeg.status ) > ffmpeg.log 2>&1 &
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -91,13 +98,6 @@ jobs:
           # Lets setup-gradle save the configuration cache, which skips the 40-60 s cold configuration on a hit.
           # Without the secret it still runs, just without that cache.
           cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
-
-      # Host ffmpeg encodes race_synth for the replay tests (:app:raceSynthMedia, cached by Gradle) and turns the
-      # screen recording into a GIF. CI only; it is not shipped in the app.
-      - name: Install ffmpeg
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ffmpeg
 
       - name: Enable KVM
         run: |
@@ -109,7 +109,37 @@ jobs:
       # system image and boots the emulator; scripts/ci/emulator-e2e.sh waits for it before running the tests.
       - name: Build test APKs in the background
         run: |
-          ( ./gradlew assembleDebug assembleDebugAndroidTest --console=plain; echo $? > prebuild.status ) > prebuild.log 2>&1 &
+          (
+            while [ ! -f ffmpeg.status ]; do sleep 1; done
+            echo "ffmpeg install exit $(cat ffmpeg.status)"; cat ffmpeg.log
+            ./gradlew assembleDebug assembleDebugAndroidTest --console=plain; echo $? > prebuild.status
+          ) > prebuild.log 2>&1 &
+
+      # The system image and a booted AVD snapshot are cached, so a hit skips the ~30 s image download and the cold
+      # boot. On a miss, the next step creates the AVD and saves a snapshot for the cache. Bump the key when the
+      # emulator settings below change. (Pattern from the android-emulator-runner README.)
+      - name: Restore system image and AVD snapshot
+        id: avd-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+            /usr/local/lib/android/sdk/system-images/android-34/google_apis/x86_64
+          key: avd-34-google_apis-x86_64-pixel_6-v1
+
+      - name: Create AVD and snapshot for the cache
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back emulated -camera-front emulated
+          disable-animations: false
+          script: echo "Generated AVD snapshot for caching."
 
       - name: Instrumented tests with screen recording
         uses: reactivecircus/android-emulator-runner@v2
@@ -119,7 +149,8 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_6
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back emulated -camera-front emulated
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back emulated -camera-front emulated
           disable-animations: true
           script: bash scripts/ci/emulator-e2e.sh
 
