@@ -43,18 +43,21 @@ import java.io.File
 @Composable
 fun DebugEntry(modifier: Modifier = Modifier) {
     var open by remember { mutableStateOf(false) }
+    var deviceOpen by remember { mutableStateOf(false) }
     Box(modifier.fillMaxSize()) {
-        if (open) {
-            ReplayScreen(onClose = { open = false })
-        } else {
-            OutlinedButton(
-                onClick = { open = true },
-                modifier = Modifier
+        when {
+            open -> ReplayScreen(onClose = { open = false })
+            deviceOpen -> DeviceScreen(onClose = { deviceOpen = false })
+            else -> Column(
+                Modifier
                     .align(Alignment.BottomEnd)
                     .windowInsetsPadding(WindowInsets.safeDrawing)
-                    .padding(16.dp)
-                    .testTag(ReplayTags.OPEN),
-            ) { Text("Replay (debug)") }
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedButton({ deviceOpen = true }, Modifier.testTag(DeviceTags.OPEN)) { Text("Device (debug)") }
+                OutlinedButton({ open = true }, Modifier.testTag(ReplayTags.OPEN)) { Text("Replay (debug)") }
+            }
         }
     }
 }

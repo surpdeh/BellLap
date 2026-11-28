@@ -34,6 +34,7 @@ adb shell run-as "$APP" ls files/evidence || echo "WARN: run-as failed or files/
 for f in $(adb shell run-as "$APP" ls files/evidence 2>/dev/null | tr -d '\r'); do
   adb exec-out run-as "$APP" cat "files/evidence/$f" > "evidence/$f" || echo "WARN: could not pull $f"
 done
+adb shell run-as net.belllap.debug cat files/logs/device-capabilities.json > evidence/device-capabilities-app.json 2>/dev/null || true
 adb shell run-as net.belllap.debug cat files/logs/events.jsonl > evidence/events.jsonl 2>/dev/null || true
 adb logcat -d > evidence/logcat.txt || true
 # Surface the useful lines in the job log (the artifact is not always reachable).

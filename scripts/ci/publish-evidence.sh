@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Publishes PR verification evidence (PNG/GIF) to the ci-evidence branch and upserts a single PR comment.
+# Publishes PR verification evidence (PNG/GIF and device-capabilities JSON) to the ci-evidence branch and upserts a single PR comment.
 # Required env: GH_TOKEN PR SHA BUILD_RESULT E2E_RESULT RUN_URL GITHUB_REPOSITORY
 set -euo pipefail
 MARKER="<!-- belllap-evidence -->"
@@ -19,8 +19,13 @@ mkdir -p "$WORK/ev/$DEST"
 find artifacts -type f \( -name '*.png' -o -name '*.gif' \) -size -8M | head -40 | while read -r f; do
   cp "$f" "$WORK/ev/$DEST/$(echo "${f#artifacts/}" | tr '/' '_')"
 done
-IMAGES=$(cd "$WORK/ev/$DEST" && ls 2>/dev/null || true)
-if [ -n "$IMAGES" ]; then
+# Small probe JSON (F25) is published too, because the workflow artifact zip is not reachable from every client.
+find artifacts -type f -name 'device-capabilities*.json' -size -1000k | head -10 | while read -r f; do
+  cp "$f" "$WORK/ev/$DEST/$(echo "${f#artifacts/}" | tr '/' '_')"
+done
+IMAGES=$(cd "$WORK/ev/$DEST" && ls 2>/dev/null | grep -E '\.(png|gif)$' || true)
+JSONS=$(cd "$WORK/ev/$DEST" && ls 2>/dev/null | grep -E '\.json$' || true)
+if [ -n "$IMAGES$JSONS" ]; then
   git -C "$WORK/ev" add -A && git -C "$WORK/ev" commit -qm "evidence for PR #${PR} @ ${SHA:0:8}" && git -C "$WORK/ev" push -q origin ci-evidence
 fi
 
@@ -41,6 +46,10 @@ RAW="https://github.com/${GITHUB_REPOSITORY}/blob/ci-evidence/${DEST}"
     echo "<details><summary>Bell metrics with YAMNet stage 1 (scripts/bell/replay-yamnet.sh)</summary>"
     echo; echo '```json'; grep -E '"(source|bellStage1|violations)"|bell\.' "$YAMNET" | head -c 6000; echo; echo '```'; echo "</details>"
   fi
+  for j in $JSONS; do
+    echo "<details><summary>${j} ([raw](${RAW}/${j}?raw=true))</summary>"
+    echo; echo '```json'; head -c 12000 "$WORK/ev/$DEST/$j"; echo; echo '```'; echo "</details>"
+  done
   if [ -n "$IMAGES" ]; then
     echo "### Screens"
     for i in $IMAGES; do echo "<details><summary>${i}</summary><img src=\"${RAW}/${i}?raw=true\" width=\"360\"></details>"; done

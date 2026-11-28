@@ -5,14 +5,19 @@ import android.os.SystemClock
 import androidx.core.content.edit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import net.belllap.audio.android.AudioInput
 import net.belllap.audio.android.AudioRecordPcmRecorder
 import net.belllap.audio.android.YamnetBellClassifier
 import net.belllap.audio.bell.BellClassifier
 import net.belllap.audio.source.MicAudioSource
+import net.belllap.capture.DeviceProbe
 import net.belllap.core.log.AndroidInfo
 import net.belllap.core.log.EventLog
 import net.belllap.core.log.RollingFileTree
+import net.belllap.core.model.DeviceCapabilities
 import net.belllap.core.service.SessionHost
 import net.belllap.core.service.SessionHostProvider
 import net.belllap.session.EventLogSessionLog
@@ -23,6 +28,11 @@ import java.io.File
 class BellLapApp : Application(), SessionHostProvider {
     lateinit var eventLog: EventLog
         private set
+
+    private val capabilities = MutableStateFlow<DeviceCapabilities?>(null)
+
+    /** What this device can do (F25), or null until the first probe finishes. Settings gate their options on it. */
+    val deviceCapabilities: StateFlow<DeviceCapabilities?> = capabilities
 
     /** Stage 1 of the bell cascade, loaded once (it maps a 4 MB model). Shared by the session and Replay. */
     val bellClassifier: BellClassifier by lazy { YamnetBellClassifier.loadOrFallback(this) }
@@ -54,6 +64,12 @@ class BellLapApp : Application(), SessionHostProvider {
         val prefs = getSharedPreferences("eventlog", MODE_PRIVATE)
         val newest = AndroidInfo.recordExitInfo(this, eventLog, prefs.getLong(KEY_LAST_EXIT, 0L))
         prefs.edit { putLong(KEY_LAST_EXIT, newest) }
+        // The JSON sits beside the event logs, so a bug report bundling the logs directory includes it.
+        MainScope().launch(Dispatchers.IO) {
+            runCatching { DeviceProbe.writeJson(this@BellLapApp, logsDir) }
+                .onSuccess { capabilities.value = it }
+                .onFailure { Timber.w(it, "Device capability probe failed") }
+        }
     }
 
     private companion object {

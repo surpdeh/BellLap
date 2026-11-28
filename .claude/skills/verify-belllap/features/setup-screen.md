@@ -28,6 +28,11 @@ Preconditions: Doctor prints `DOCTOR_OK`.
 - Settings overlay (`settings_button`, `settings_overlay`), permission rationale (`permission_rationale`, `grant_button`, `open_settings_button`). Goldens: `setup_settings_overlay.png`, `setup_permission_rationale.png`.
 - Tier 2 `LaunchTest` grants camera and mic, so the emulator screenshot shows the emulated camera preview.
 
+## F25 additions
+
+- Camera, resolution and fps chips are enabled only for what the device probe reports. Tier 1: `SetupScreenTest.settingsOverlayOffersOnlyCamerasTheDeviceHas` and `DeviceCapabilitiesTest` (`./gradlew :core:model:test :app:testDebugUnitTest`).
+- Tier 2: `DeviceProbeTest` saves `device-capabilities.json` to `files/evidence/`, and the CI script also pulls `files/logs/device-capabilities.json`. Read both in the PR evidence comment. The debug-only **Device (debug)** button (`device_open`) shows the same JSON (`device_json`).
+
 ## Gotchas
 
 - `SS-4` (insets, cutouts) is not provable by the Robolectric screenshot, which has no cutout. It needs the tier 2 emulator or a phone.

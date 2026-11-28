@@ -128,6 +128,7 @@ class MainActivity : ComponentActivity() {
                 val state by session.state.collectAsState()
                 val bell by session.bell.collectAsState()
                 LaunchedEffect(settings) { session.updateSettings(settings) }
+                val device by (application as BellLapApp).deviceCapabilities.collectAsState()
                 LaunchedEffect(dimmedStandby(state)) { applyDimming(dimmedStandby(state)) }
                 var onboarded by rememberSaveable { mutableStateOf(false) }
                 var capabilities by remember { mutableStateOf<CameraCapabilities?>(null) }
@@ -150,7 +151,8 @@ class MainActivity : ComponentActivity() {
                     Box {
                         SetupScreen(
                             settings = settings,
-                            capabilities = capabilities,
+                            capabilities = device?.forFacing(settings.facing) ?: capabilities,
+                            facings = device?.facings(),
                             permission = permissionUi(granted, asked, rationale),
                             settingsOpen = settingsOpen,
                             onSettingsOpenChange = { settingsOpen = it },
@@ -163,10 +165,7 @@ class MainActivity : ComponentActivity() {
                             onStandby = { SessionForegroundService.startStandby(this@MainActivity) },
                             detectMessage = detectMessage,
                             onDetectLine = { scope.launch { detectMessage = detectAndStoreLine(repo) } },
-                            onOpenSystemSettings = {
-                                val uri = Uri.fromParts("package", packageName, null)
-                                startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, uri))
-                            },
+                            onOpenSystemSettings = ::openAppSettings,
                             preview = {
                                 CameraPreview(settings, onMapping = { mapping = it }) { caps ->
                                     capabilities = caps
@@ -180,6 +179,11 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    private fun openAppSettings() {
+        val uri = Uri.fromParts("package", packageName, null)
+        startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, uri))
     }
 
     /** Grabs a frame, runs the F12 detector and stores a found line; returns the message to show. */
