@@ -316,7 +316,7 @@ Bug reports:
 - [ ] **F37 Wear OS remote:** ([#31](https://github.com/surpdeh/belllap/issues/31)) watch tile and app with "Record now", "Bell now", "Stop" and a status view.
 - [x] **F38 Volume-key shortcut:** ([#32](https://github.com/surpdeh/belllap/issues/32)) a hardware key arms or starts recording while the app is in the foreground.
 - [ ] **F40 Real-device CI:** ([#33](https://github.com/surpdeh/belllap/issues/33)) nightly Firebase Test Lab matrix of capability probes and camera smoke tests.
-- [ ] **F41 Release pipeline:** ([#34](https://github.com/surpdeh/belllap/issues/34)) signed AAB/APK on tag, GitHub Release, Play internal track (pending decision §1.7).
+- [x] **F41 Release pipeline:** ([#34](https://github.com/surpdeh/belllap/issues/34)) signed AAB/APK on tag, GitHub Release, Play internal track (pending decision §1.7).
 
 ---
 

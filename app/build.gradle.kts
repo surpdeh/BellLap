@@ -10,8 +10,9 @@ android {
     defaultConfig {
         applicationId = "net.belllap"
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        // F41: release.yml passes both from the tag and run number; local builds keep the defaults.
+        versionCode = providers.gradleProperty("belllap.versionCode").map(String::toInt).getOrElse(1)
+        versionName = providers.gradleProperty("belllap.versionName").getOrElse("0.1.0")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // F22: where bug reports go. Empty (the default) disables Send; set both in ~/.gradle/gradle.properties.
         buildConfigField("String", "REPORTS_URL", "\"${providers.gradleProperty("belllap.reportsUrl").getOrElse("")}\"")
@@ -22,7 +23,24 @@ android {
         )
     }
 
+    // F41: the release keystore comes from the environment (release.yml decodes it from secrets).
+    // Without BELLLAP_KEYSTORE_FILE the release build stays unsigned, so local and PR builds need no secrets.
+    val releaseKeystore = providers.environmentVariable("BELLLAP_KEYSTORE_FILE").orNull
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = file(releaseKeystore)
+                storePassword = providers.environmentVariable("BELLLAP_KEYSTORE_PASSWORD").get()
+                keyAlias = providers.environmentVariable("BELLLAP_KEY_ALIAS").get()
+                keyPassword = providers.environmentVariable("BELLLAP_KEY_PASSWORD").get()
+            }
+        }
+    }
+
     buildTypes {
+        release {
+            signingConfig = signingConfigs.findByName("release")
+        }
         debug {
             applicationIdSuffix = ".debug"
         }
