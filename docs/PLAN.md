@@ -237,20 +237,22 @@ Setup and capture:
   - Dimmed-standby screen; brightness restored when the bell is heard.
   - Notification actions: Bell now, Record now, Stop, Exit.
   - Onboarding for permissions, the battery-optimisation exemption and OEM tips.
-- [ ] **F14 Bell detection v1:** ([#13](https://github.com/surpdeh/belllap/issues/13))
+- [x] **F14 Bell detection v1:** ([#13](https://github.com/surpdeh/belllap/issues/13))
   - Spectral gate, then YAMNet (LiteRT) bell classes, then a persistence rule.
   - Sensitivity setting and a "Bell now" button.
   - Metrics on fixtures: target recall ≥ 0.9 and < 0.2 false alarms per hour.
+  - Done: `:audio:bell` cascade, `:audio:android` (AudioRecord + LiteRT YAMNet), STANDBY screen. A train of ≥ 4 clean strikes in 3 s fires without YAMNet, because YAMNet misses a bell in loud noise. Tier 3 (a real bell on a phone) is still open.
 - [ ] **F15 Alert player:** ([#14](https://github.com/surpdeh/belllap/issues/14)) armed beep series at +10 s, beep per finisher and stand-down chime, all at maximum volume through the alarm stream. Volume is restored afterwards.
 - [ ] **F25 Device capability probe:** ([#15](https://github.com/surpdeh/belllap/issues/15)) dumps camera hardware level, fps ranges, supported session configurations and audio sources. Included in bug reports.
 
 Detection and recording:
 
-- [ ] **F16 Flag detection v1:** ([#16](https://github.com/surpdeh/belllap/issues/16))
+- [x] **F16 Flag detection v1:** ([#16](https://github.com/surpdeh/belllap/issues/16))
   - Texture detector running on ARMED analysis frames.
   - Hysteresis, and a configurable absence timeout (default 15 s).
   - Metrics on fixtures.
   - Debug overlay showing the detection box.
+  - Done: `:vision:flag` `ChequeredFlagDetector` (X-corner polarity, bimodal tiles, per-tile motion, 0.5 s onset and hold). The 15 s absence timeout stays in the state machine (`flagAbsentTimeoutMs`). The overlay is drawn by the harness (`flag-hit.png`, `flag-banner-rejected.png`); a live Compose overlay waits for the ARMED camera pipeline (F17). Tier 3 (a real flag on a phone) is still open.
 - [ ] **F17 Acquisition recording:** ([#17](https://github.com/surpdeh/belllap/issues/17))
   - CameraX Recorder at 30/60 fps, one MP4 per acquisition, plus a sidecar JSON.
   - Auto-naming, and "Record now" / "Stop".

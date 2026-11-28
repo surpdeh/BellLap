@@ -25,7 +25,9 @@ scripts/fixtures/fetch.sh            # into testing/fixtures/real/ (gitignored)
 
 - Without credentials the script prints `SKIPPED` and exits 0.
 - With no fixtures present, `replayReal` writes `build/reports/real-metrics.json` with `"status": "skipped"`. Treat that as **inconclusive**, never as a pass.
-- The nightly workflow `nightly-real-metrics.yml` uses repository secrets `FIXTURES_S3_BUCKET`, `FIXTURES_S3_ENDPOINT`, `FIXTURES_S3_ACCESS_KEY_ID` and `FIXTURES_S3_SECRET_ACCESS_KEY`. A read-only bucket key is enough.
+- The nightly workflow `nightly-real-metrics.yml` reads two repository **variables** (Settings → Secrets and variables → Actions → Variables) and two repository **secrets**:
+  - variables, not secret, so they are visible in the settings: `FIXTURES_S3_BUCKET` (`belllap-fixtures`) and `FIXTURES_S3_ENDPOINT` (`https://<account-id>.r2.cloudflarestorage.com`);
+  - secrets: `FIXTURES_S3_ACCESS_KEY_ID` and `FIXTURES_S3_SECRET_ACCESS_KEY`. These are the S3 key pair from R2 → Manage R2 API Tokens, not a Cloudflare API token. An Object Read token scoped to the bucket is enough.
 - Real-footage metrics are reported, not gating, until they are stable (see VERIFICATION.md threshold rule).
 
 ## Labelling guide
@@ -44,6 +46,7 @@ Steps:
 
 1. Extract frames, e.g. `ffmpeg -i clip.mp4 -vf format=gray <name>_frames/frame_%05d.png` and audio `ffmpeg -i clip.mp4 -ar 16000 -ac 1 <name>.wav`.
 2. Label by stepping frame by frame; label a crossing on the first frame the wheel touches the line.
+   For a bell-only audio clip, `scripts/fixtures/clip-bell.sh INPUT START_S DURATION_S NAME [STRIKE_S ...]` cuts the clip to 16 kHz mono and writes `labels.json`. Run it without strike times first: it prints candidate onsets to check by ear.
 3. Validate: `Labels.parse` rejects unsorted or overlapping labels, and `replayReal` fails fast on a malformed file.
 4. Upload the directory to `golden/` (golden set, under about 2 GB) or another prefix for the larger set.
 

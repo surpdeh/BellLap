@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import net.belllap.core.model.CaptureSettings
+import net.belllap.core.model.FinishLine
 
 /** Persists [CaptureSettings] in DataStore. Unknown or invalid stored values fall back to defaults. */
 class SettingsRepository(private val store: DataStore<Preferences>) {
@@ -27,10 +28,12 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             resolution = enumOrDefault(p[RESOLUTION], d.resolution),
             fps = enumOrDefault(p[FPS], d.fps),
             bellAutomation = p[BELL] ?: d.bellAutomation,
+            bellSensitivity = enumOrDefault(p[BELL_SENSITIVITY], d.bellSensitivity),
             flagAutomation = p[FLAG] ?: d.flagAutomation,
             crossingBeeps = p[BEEPS] ?: d.crossingBeeps,
             flagTimeoutSeconds = timeout ?: d.flagTimeoutSeconds,
             alertVolumePercent = volume,
+            finishLine = p[FINISH_LINE]?.let(FinishLine::fromSidecarJson),
         )
     }
 
@@ -39,11 +42,14 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         p[RESOLUTION] = s.resolution.name
         p[FPS] = s.fps.name
         p[BELL] = s.bellAutomation
+        p[BELL_SENSITIVITY] = s.bellSensitivity.name
         p[FLAG] = s.flagAutomation
         p[BEEPS] = s.crossingBeeps
         p[FLAG_TIMEOUT] = s.flagTimeoutSeconds
         val v = s.alertVolumePercent
         if (v == null) p.remove(ALERT_VOLUME) else p[ALERT_VOLUME] = v
+        val line = s.finishLine
+        if (line == null) p.remove(FINISH_LINE) else p[FINISH_LINE] = line.toSidecarJson()
     }
 
     private inline fun <reified E : Enum<E>> enumOrDefault(name: String?, default: E): E =
@@ -54,9 +60,11 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         val RESOLUTION = stringPreferencesKey("resolution")
         val FPS = stringPreferencesKey("fps")
         val BELL = booleanPreferencesKey("bell_automation")
+        val BELL_SENSITIVITY = stringPreferencesKey("bell_sensitivity")
         val FLAG = booleanPreferencesKey("flag_automation")
         val BEEPS = booleanPreferencesKey("crossing_beeps")
         val FLAG_TIMEOUT = intPreferencesKey("flag_timeout_s")
         val ALERT_VOLUME = intPreferencesKey("alert_volume_pct")
+        val FINISH_LINE = stringPreferencesKey("finish_line")
     }
 }

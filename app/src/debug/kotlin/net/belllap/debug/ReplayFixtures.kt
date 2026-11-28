@@ -1,10 +1,16 @@
 package net.belllap.debug
 
+import net.belllap.audio.bell.BellClassifier
+import net.belllap.audio.bell.BellDetectorConfig
 import net.belllap.audio.source.WavIo
+import net.belllap.core.replay.BellDetector
 import net.belllap.core.replay.Detectors
+import net.belllap.core.replay.FlagDetector
 import net.belllap.core.replay.LabelDrivenDetectors
 import net.belllap.testing.fixtures.Fixtures
+import net.belllap.vision.flag.ChequeredFlagDetector
 import java.io.File
+import net.belllap.audio.bell.BellDetector as BellCascade
 
 /** A video and audio pair to replay, plus the detectors to run on it. */
 class ReplayInput(val name: String, val video: File, val audio: File, val detectors: Detectors)
@@ -13,22 +19,30 @@ class ReplayInput(val name: String, val video: File, val audio: File, val detect
 object ReplayFixtures {
     const val RACE_SYNTH = "race_synth"
 
-    /** Generates the `race_synth` fixture, writes its WAV, and encodes its frames to MP4 (cached). */
-    fun raceSynth(dir: File): ReplayInput {
-        val fixture = Fixtures.race()
-        val labels = fixture.labels
+    /**
+     * Generates the `race_synth` fixture, writes its WAV, and encodes its frames to MP4 (cached). When the MP4 is
+     * already in [dir] (cached, or placed there by the emulator tests from host-encoded assets), only the labels
+     * are generated. The bell is found by the real F14 cascade with [bellClassifier]; the flag by the real F16
+     * texture detector; crossings are still label-driven until F18.
+     */
+    fun raceSynth(dir: File, bellClassifier: BellClassifier): ReplayInput {
         val wav = File(dir, "$RACE_SYNTH.wav")
         val mp4 = File(dir, "$RACE_SYNTH.mp4")
+        val encoded = mp4.length() > 0L
+        val fixture = Fixtures.race(withFrames = !encoded)
+        val labels = fixture.labels
         val audio = checkNotNull(fixture.audio)
         if (!wav.exists()) WavIo.write(wav, audio.sampleRate, audio.samples)
-        if (!mp4.exists() || mp4.length() == 0L) {
-            Mp4Encoder.encode(checkNotNull(fixture.frames), checkNotNull(labels.fps).toInt(), mp4)
-        }
-        val detectors = LabelDrivenDetectors.of(
-            bellOnsetsNs = labels.bellOnsetsNs,
+        if (!encoded) Mp4Encoder.encode(checkNotNull(fixture.frames), checkNotNull(labels.fps).toInt(), mp4)
+        val stubs = LabelDrivenDetectors.of(
+            bellOnsetsNs = emptyList(),
             flagIntervals = labels.flagIntervals.map { it.startNs until it.endNs },
             crossingsNs = labels.crossings.map { it.ptsNs },
         )
-        return ReplayInput(RACE_SYNTH, mp4, wav, detectors)
+        val textureFlag = ChequeredFlagDetector()
+        val flag = FlagDetector { textureFlag.accept(it).visible }
+        val cascade = BellCascade(audio.sampleRate, bellClassifier, BellDetectorConfig())
+        val bell = BellDetector { chunk -> cascade.accept(chunk).isNotEmpty() }
+        return ReplayInput(RACE_SYNTH, mp4, wav, Detectors(bell, flag, stubs.crossing))
     }
 }

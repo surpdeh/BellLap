@@ -38,7 +38,7 @@ adb shell run-as net.belllap.debug cat files/logs/events.jsonl > evidence/events
 adb logcat -d > evidence/logcat.txt || true
 # Surface the useful lines in the job log (the artifact is not always reachable).
 echo "== logcat excerpt: crashes, camera and test failures =="
-grep -E "FATAL EXCEPTION|AndroidRuntime|TestRunner:.*(failed|Exception)" evidence/logcat.txt | cut -c1-260 | head -20 || true
+grep -E "FATAL EXCEPTION|AndroidRuntime|TestRunner:.*(failed|Exception|Error)|BellLapReplay" evidence/logcat.txt | cut -c1-260 | head -20 || true
 echo "-- camera lines (first 60) --"
 grep -E "BellLapCamera|CameraX|Camera2CameraImpl|CameraDevice|CameraCaptureSession|CameraService|Camera preview|SurfaceRequest" evidence/logcat.txt | grep -vE "AppsFilter|WindowManager|Transition|CameraValidator|^\S+ \S+ +[0-9]+ +[0-9]+ [A-Z] CameraX *: +(at |\.\.\.)|Caused by" | cut -c1-260 | head -80 || true
 echo "-- thread stacks when the preview wait expired --"

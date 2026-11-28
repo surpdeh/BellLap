@@ -2,7 +2,7 @@
 # Fetch real race fixtures (F03b) from the private S3-compatible bucket (Cloudflare R2 or GCS interop)
 # into testing/fixtures/real/. Real footage is never committed (see CLAUDE.md, docs/FIXTURES.md).
 #
-# Required env (CI: repository secrets):
+# Required env (CI: FIXTURES_S3_BUCKET and FIXTURES_S3_ENDPOINT are repository variables, the keys are secrets):
 #   FIXTURES_S3_BUCKET, FIXTURES_S3_ENDPOINT, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
 # Optional: FIXTURES_S3_PREFIX (default "golden/"), BELLLAP_REAL_FIXTURES (destination dir).
 #

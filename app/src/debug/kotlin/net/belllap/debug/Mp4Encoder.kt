@@ -72,18 +72,29 @@ object Mp4Encoder {
         }
     }
 
+    /** Row-wise bulk puts: per-pixel puts made encoding race_synth take minutes on the CI emulator. */
     private fun fill(image: android.media.Image, f: Frame) {
         val y = image.planes[0]
-        for (row in 0 until f.height) {
-            for (col in 0 until f.width) y.buffer.put(
-                row * y.rowStride + col * y.pixelStride,
-                f.luma[row * f.stride + col],
-            )
+        if (y.pixelStride == 1) {
+            for (row in 0 until f.height) {
+                y.buffer.position(row * y.rowStride)
+                y.buffer.put(f.luma, row * f.stride, f.width)
+            }
+        } else {
+            for (row in 0 until f.height) {
+                for (col in 0 until f.width) {
+                    y.buffer.put(row * y.rowStride + col * y.pixelStride, f.luma[row * f.stride + col])
+                }
+            }
         }
+        // Chroma is flat grey, so covering the whole span of a row also fills an interleaved (NV12) partner plane
+        // with the same value.
         for (p in 1..2) {
             val plane = image.planes[p]
+            val grey = ByteArray((f.width / 2 - 1) * plane.pixelStride + 1) { GREY }
             for (row in 0 until f.height / 2) {
-                for (col in 0 until f.width / 2) plane.buffer.put(row * plane.rowStride + col * plane.pixelStride, GREY)
+                plane.buffer.position(row * plane.rowStride)
+                plane.buffer.put(grey)
             }
         }
     }

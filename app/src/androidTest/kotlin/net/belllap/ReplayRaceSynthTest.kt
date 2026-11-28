@@ -10,12 +10,15 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import net.belllap.core.log.EventLog
 import net.belllap.core.log.StateTransition
+import net.belllap.debug.ReplayController
 import net.belllap.debug.ReplayTags
 import net.belllap.testing.fixtures.Fixtures
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import java.io.File
 
 /** F24: replays race_synth (real MP4 decode, WAV source, state machine) from the debug menu and checks the log. */
 class ReplayRaceSynthTest {
@@ -25,6 +28,22 @@ class ReplayRaceSynthTest {
 
     @get:Rule(order = 1)
     val composeRule = createAndroidComposeRule<MainActivity>()
+
+    /**
+     * Puts the host-encoded race_synth (`:app:raceSynthMedia`, androidTest assets) where the app caches it, so the
+     * replay skips encoding on the emulator. Without those assets (no ffmpeg at build time) the app encodes it.
+     */
+    @Before
+    fun placeHostEncodedMedia() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val assets = instrumentation.context.assets
+        val names = assets.list(ASSET_DIR).orEmpty()
+        val dir = File(instrumentation.targetContext.cacheDir, ASSET_DIR).apply { mkdirs() }
+        for (name in names) {
+            assets.open("$ASSET_DIR/$name").use { input -> File(dir, name).outputStream().use { input.copyTo(it) } }
+        }
+        android.util.Log.i("BellLapReplay", "host-encoded media placed: ${names.toList()}")
+    }
 
     @Test
     fun replaysRaceSynthAndLogsTheEventSequence() {
@@ -59,6 +78,7 @@ class ReplayRaceSynthTest {
         TestEvidence.screenshot("12-journey-real-time-selected")
 
         composeRule.onNodeWithTag(ReplayTags.RUN_RACE_SYNTH).performClick()
+        composeRule.waitUntil(PREPARE_TIMEOUT_MS) { statusText() != ReplayController.PREPARING }
         for ((mode, shot) in listOf(
             "STANDBY" to "13-journey-standby",
             "ARMING" to "14-journey-arming-after-bell",
@@ -78,7 +98,7 @@ class ReplayRaceSynthTest {
     }
 
     private fun expectedSequence(): List<String> {
-        val crossings = Fixtures.race().labels.crossings.size
+        val crossings = Fixtures.race(withFrames = false).labels.crossings.size
         return listOf(
             "SETUP>STANDBY:StandbyRequested",
             "STANDBY>ARMING:BellDetected",
@@ -91,9 +111,14 @@ class ReplayRaceSynthTest {
         )
     }
 
-    /** Waits for Done or Failed. On a timeout, keeps a screenshot and reports what the screen said. */
+    /**
+     * Waits for Done or Failed. Preparing the media (generating and encoding race_synth on a cold cache) gets its
+     * own budget, because on the CI emulator it alone has taken over two minutes. On a timeout, keeps a screenshot
+     * and reports what the screen said.
+     */
     private fun awaitReplayFinished() {
         try {
+            composeRule.waitUntil(PREPARE_TIMEOUT_MS) { statusText() != ReplayController.PREPARING }
             composeRule.waitUntil(TIMEOUT_MS) { statusText().let { it.startsWith("Done") || it.startsWith("Failed") } }
         } catch (e: androidx.compose.ui.test.ComposeTimeoutException) {
             runCatching { TestEvidence.screenshot("replay-timeout") }
@@ -122,6 +147,8 @@ class ReplayRaceSynthTest {
     }
 
     private companion object {
+        const val ASSET_DIR = "replay"
+        const val PREPARE_TIMEOUT_MS = 300_000L
         const val TIMEOUT_MS = 180_000L
         const val MODE_TIMEOUT_MS = 90_000L
         const val HOLD_MS = 2_000L

@@ -12,16 +12,13 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
-import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,47 +31,44 @@ import net.belllap.core.statemachine.State
  * (Android 14+ forbids starting microphone/camera services from the background), and only after the mic and
  * camera permissions are granted.
  *
- * The service owns the session state; observe [state].
+ * The service owns the session while it runs: it hosts the app session ([SessionHost]), mirrors its state into
+ * [state], and drives the notification and the wake lock from it.
  */
 class SessionForegroundService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private var controller: SessionController? = null
+    private var host: SessionHost? = null
     private var wakeLock: PowerManager.WakeLock? = null
-    private var ticker: Job? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
-        val c = SessionController(nowMs = SystemClock::elapsedRealtime)
-        controller = c
-        _state.value = c.state.value
+        val h = (application as? SessionHostProvider)?.sessionHost ?: return
+        host = h
         scope.launch {
-            c.state.collect { s ->
+            h.state.collect { s ->
                 _state.value = s
                 updateWakeLock(wakeLockRequired(s))
                 getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, buildNotification(s))
             }
         }
-        ticker = scope.launch {
-            while (true) {
-                delay(TICK_MS)
-                c.tick()
-            }
-        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val c = controller ?: return START_NOT_STICKY
+        val h = host
+        if (h == null) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
         ensureChannel()
-        promoteToForeground(c.state.value)
+        promoteToForeground(h.state.value)
         when (intent?.action) {
-            ACTION_STANDBY -> c.dispatch(Event.StandbyRequested)
-            ACTION_BELL_NOW -> c.dispatch(Event.BellNow)
-            ACTION_RECORD_NOW -> c.dispatch(Event.RecordNow)
-            ACTION_STOP -> c.dispatch(Event.Stop)
+            ACTION_STANDBY -> h.dispatch(Event.StandbyRequested, "user")
+            ACTION_BELL_NOW -> h.dispatch(Event.BellNow, "notification")
+            ACTION_RECORD_NOW -> h.dispatch(Event.RecordNow, "notification")
+            ACTION_STOP -> h.dispatch(Event.Stop, "notification")
             ACTION_EXIT -> {
-                c.dispatch(Event.Stop)
+                h.dispatch(Event.Stop, "notification")
                 stopSelf()
             }
             else -> Unit
@@ -83,7 +77,6 @@ class SessionForegroundService : Service() {
     }
 
     override fun onDestroy() {
-        ticker?.cancel()
         scope.cancel()
         updateWakeLock(false)
         _state.value = State.Setup
@@ -155,7 +148,6 @@ class SessionForegroundService : Service() {
         const val ACTION_EXIT = "net.belllap.action.EXIT"
         private const val CHANNEL_ID = "session"
         private const val NOTIFICATION_ID = 1
-        private const val TICK_MS = 250L
 
         private val _state = MutableStateFlow<State>(State.Setup)
 

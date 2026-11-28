@@ -1,6 +1,6 @@
 # Replay mode
 
-Status: **RP-1 and RP-2 implemented (F03); RP-3 and RP-4 implemented (F24)**, with label-driven stub detectors until F14, F16 and F18. `:testing:harness:replay` replays the synthetic fixtures through baseline detectors; the real detectors replace them later.
+Status: **RP-1 and RP-2 implemented (F03); RP-3 and RP-4 implemented (F24)**. In-app replay of `race_synth` runs the real F14 bell cascade (YAMNet, or the spectral gate alone if the model is missing) and label-driven stub flag and crossing detectors until F16 and F18. `:testing:harness:replay` replays the synthetic fixtures through the F14 bell cascade and the baseline flag and crossing detectors. Bell metrics are per bell lap; see [bell-detection](./bell-detection.md).
 
 Replay runs the whole pipeline (state machine and detectors) on a chosen MP4 and WAV instead of the camera and microphone. It is the main way to verify on the emulator.
 
@@ -23,7 +23,8 @@ Preconditions: Doctor prints `DOCTOR_OK`.
 - **Tier 1 evidence:** `testing/harness/build/reports/` holds `metrics.json`, `contact-sheet.png` (race frames, crossing frames outlined red) and `spectrogram.png` (bell with distractors). Open both PNGs with the Read tool. `replay` exits 1 when a metric breaks `testing/thresholds.json`.
 - **Inspect the fixtures:** `./gradlew :testing:fixtures:generateFixtures` writes WAVs, PNG sequences and `labels.json` to `testing/fixtures/generated/`.
 - **RP-3, RP-4 wiring (tier 1):** `./gradlew :core:replay:test` replays an in-memory session and asserts the exact event sequence on PTS. The MediaCodec decode path runs only on the emulator, so report it as inconclusive until the CI evidence comment shows it.
-- **Tier 2 (RP-3, RP-4):** `ReplayRaceSynthTest` encodes `race_synth` to MP4 on the device, replays it from the debug menu and asserts the sequence in `events.jsonl`. the CI emulator job pulls `events.jsonl` from `files/logs/events.jsonl` in the app sandbox and posts it in the evidence comment. Read the sequence there.
+- **Host-encoded media:** `./gradlew :app:raceSynthMedia` encodes `race_synth.mp4` and `.wav` with host ffmpeg into `app/build/generated/raceSynthMedia/replay/`, which becomes androidTest assets. The task is cacheable and is skipped without ffmpeg. `:testing:fixtures:test` probes the MP4 with ffprobe (`RaceSynthMediaTest`, skipped without ffmpeg: report that as inconclusive).
+- **Tier 2 (RP-3, RP-4):** `ReplayRaceSynthTest` copies the host-encoded assets into the app's replay cache, replays them from the debug menu through the real MediaCodec decoder and asserts the sequence in `events.jsonl`. The on-device `Mp4Encoder` runs only when those assets are missing, so CI does not cover it: a phone's first fixture replay does. `BellLapReplay` lines in the logcat excerpt give preparation and replay times. The CI emulator job pulls `events.jsonl` from `files/logs/events.jsonl` in the app sandbox and posts it in the evidence comment. Read the sequence there.
 
 ## Gotchas
 

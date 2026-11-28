@@ -16,6 +16,7 @@ import javax.imageio.ImageIO
 import kotlin.system.exitProcess
 
 private const val SHEET_COLUMNS = 6
+private const val DEFAULT_AMBIENCE_HOURS = 6
 private const val SHEET_FRAMES = 18
 private val PRETTY = Json { prettyPrint = true }
 
@@ -43,13 +44,20 @@ fun replayRealMain(args: Array<String>) {
         )
         return
     }
-    val metrics = ReplayRunner.run(root, names)
+    val stage1 = Stage1.fromSystemProperties()
+    val metrics = ReplayRunner.run(root, names, stage1)
+    println("bell stage 1: ${stage1.label}")
+    if (stage1 is Stage1.Dump) return
+    File(outDir, "real-bell-trace.csv").writeText(
+        (listOf("fixture,event,pts_ms,detail") + ReplayRunner.bellTrace).joinToString("\n", postfix = "\n"),
+    )
     file.writeText(
         PRETTY.encodeToString(
             JsonObject.serializer(),
             buildJsonObject {
                 put("schemaVersion", 1)
                 put("status", "ran")
+                put("bellStage1", stage1.label)
                 put("fixtures", JsonArray(names.map(::JsonPrimitive)))
                 put("metrics", buildJsonObject { metrics.forEach { (k, v) -> put(k, v) } })
             },
@@ -61,7 +69,8 @@ fun replayRealMain(args: Array<String>) {
 
 /**
  * `./gradlew :testing:harness:replay`. Args: output dir, thresholds file.
- * Writes `metrics.json`, `contact-sheet.png` and `spectrogram.png`, and exits 1 if any threshold is violated.
+ * Writes `metrics.json`, `bell-trace.csv`, `contact-sheet.png` and `spectrogram.png`, and exits 1 if any threshold
+ * is violated.
  */
 fun main(args: Array<String>) {
     val outDir = File(args[0]).also { it.mkdirs() }
@@ -71,24 +80,44 @@ fun main(args: Array<String>) {
     val fixtures = Fixtures.all()
     FixtureWriter.write(fixturesDir, fixtures)
 
-    val metrics = ReplayRunner.run(fixturesDir, FixtureWriter.loadManifest(fixturesDir))
+    val stage1 = Stage1.fromSystemProperties()
+    val metrics = ReplayRunner.run(fixturesDir, FixtureWriter.loadManifest(fixturesDir), stage1).toSortedMap()
+    metrics += ReplayRunner.bellTotals(metrics)
+    val hours = System.getProperty("belllap.bell.ambienceHours")?.toIntOrNull() ?: DEFAULT_AMBIENCE_HOURS
+    val ambience = AmbienceReplay.run(hours, stage1, Fixtures.DEFAULT_SEED)
+    metrics["ambience.bell.hours"] = ambience.hours.toDouble()
+    metrics["ambience.bell.false_alarms_per_hour"] = ambience.falseAlarms.toDouble() / ambience.hours
+    metrics["ambience.bell.candidates_per_hour"] = ambience.candidates.toDouble() / ambience.hours
+    metrics["ambience.bell.distractors"] = ambience.distractors.values.sum().toDouble()
+    println("bell stage 1: ${stage1.label}; ambience distractors ${ambience.distractors}")
+    if (stage1 is Stage1.Dump) {
+        println("Dumped candidate windows to ${stage1.dir.path}. Metrics from a dump run are not meaningful.")
+        return
+    }
     val violations = thresholds.violations(metrics)
-    writeMetrics(File(outDir, "metrics.json"), metrics, violations)
+    // The YAMNet run (scripts/bell/replay-yamnet.sh) reports beside the default run instead of replacing it.
+    val suffix = if (stage1 is Stage1.Precomputed) "-yamnet" else ""
+    val metricsFile = File(outDir, "metrics$suffix.json")
+    writeMetrics(metricsFile, metrics, violations, stage1)
     writeEvidence(outDir, fixturesDir)
+    File(outDir, "bell-trace$suffix.csv").writeText(
+        (listOf("fixture,event,pts_ms,detail") + ReplayRunner.bellTrace).joinToString("\n", postfix = "\n"),
+    )
 
     metrics.forEach { (k, v) -> println("%-48s %10.3f".format(k, v)) }
     println(
         "${metrics.size} metrics, ${thresholds.size} thresholds, ${violations.size} violations",
     )
     violations.forEach { println("THRESHOLD VIOLATION: $it") }
-    println("Wrote ${File(outDir, "metrics.json").path}")
+    println("Wrote ${metricsFile.path}")
     if (violations.isNotEmpty()) exitProcess(1)
 }
 
-private fun writeMetrics(file: File, metrics: Map<String, Double>, violations: List<String>) {
+private fun writeMetrics(file: File, metrics: Map<String, Double>, violations: List<String>, stage1: Stage1) {
     val doc = buildJsonObject {
         put("schemaVersion", 1)
-        put("source", "synthetic fixtures, seed ${Fixtures.DEFAULT_SEED}, baseline detectors")
+        put("source", "synthetic fixtures, seed ${Fixtures.DEFAULT_SEED}; bell cascade, baseline flag/crossings")
+        put("bellStage1", stage1.label)
         put("metrics", buildJsonObject { metrics.forEach { (k, v) -> put(k, v) } })
         put("violations", JsonArray(violations.map(::JsonPrimitive)))
     }
@@ -108,8 +137,27 @@ private fun writeEvidence(outDir: File, fixturesDir: File) {
         "png",
         File(outDir, "contact-sheet.png"),
     )
+    writeFlagOverlays(outDir, fixturesDir)
     val bell = File(fixturesDir, "bell_snr10_distractors")
     val bellLabels = Labels.load(File(bell, Labels.FILE_NAME))
     val wav = WavIo.read(File(bell, requireNotNull(bellLabels.audioFile)))
     ImageIO.write(EvidenceImages.spectrogram(wav.samples, wav.sampleRate), "png", File(outDir, "spectrogram.png"))
 }
+
+/** `flag-hit.png`: a frame mid-wave with the box. `flag-banner-rejected.png`: the banner, seen and rejected. */
+private fun writeFlagOverlays(outDir: File, fixturesDir: File) {
+    for ((fixture, file, atS) in listOf(
+        Triple("flag", "flag-hit.png", FLAG_HIT_S),
+        Triple("banner", "flag-banner-rejected.png", BANNER_S),
+    )) {
+        val dir = File(fixturesDir, fixture)
+        val labels = Labels.load(File(dir, Labels.FILE_NAME))
+        val frames = ReplayRunner.loadFrames(dir, labels)
+        val run = FlagRun.over(frames)
+        val i = (atS * requireNotNull(labels.fps)).toInt()
+        ImageIO.write(FlagOverlay.render(frames[i], run.results[i]), "png", File(outDir, file))
+    }
+}
+
+private const val FLAG_HIT_S = 6.0
+private const val BANNER_S = 6.0

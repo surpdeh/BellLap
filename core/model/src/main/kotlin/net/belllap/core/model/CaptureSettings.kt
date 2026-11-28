@@ -10,6 +10,9 @@ enum class Resolution(val width: Int, val height: Int) {
     UHD_2160(3840, 2160),
 }
 
+/** How eagerly the bell detector (F14) fires. LOW wants a longer, clearer ring; HIGH fires on fainter bells. */
+enum class BellSensitivity { LOW, MEDIUM, HIGH }
+
 @Suppress("MagicNumber")
 enum class Fps(val value: Int) { FPS_30(30), FPS_60(60) }
 
@@ -19,11 +22,14 @@ data class CaptureSettings(
     val resolution: Resolution = Resolution.FHD_1080,
     val fps: Fps = Fps.FPS_30,
     val bellAutomation: Boolean = true,
+    val bellSensitivity: BellSensitivity = BellSensitivity.MEDIUM,
     val flagAutomation: Boolean = true,
     val crossingBeeps: Boolean = true,
     val flagTimeoutSeconds: Int = DEFAULT_FLAG_TIMEOUT_S,
     /** Alert volume 0..100 that overrides the system volume, or null to follow the system. */
     val alertVolumePercent: Int? = null,
+    /** The finish line in normalised sensor coordinates (F11), or null when not drawn yet. */
+    val finishLine: FinishLine? = null,
 ) {
     init {
         require(flagTimeoutSeconds in FLAG_TIMEOUT_RANGE_S) { "flagTimeoutSeconds out of range" }

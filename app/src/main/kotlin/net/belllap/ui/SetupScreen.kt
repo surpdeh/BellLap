@@ -23,15 +23,22 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import net.belllap.core.model.BellSensitivity
 import net.belllap.core.model.CameraCapabilities
 import net.belllap.core.model.CameraFacing
 import net.belllap.core.model.CaptureSettings
+import net.belllap.core.model.FinishLine
 import net.belllap.core.model.Fps
+import net.belllap.core.model.PreviewMapping
 import net.belllap.core.model.Resolution
 
 @Composable
@@ -42,11 +49,15 @@ fun SetupScreen(
     settingsOpen: Boolean,
     onSettingsOpenChange: (Boolean) -> Unit,
     onSettingsChange: (CaptureSettings) -> Unit,
+    onFinishLineChange: (FinishLine?) -> Unit,
     onRequestPermissions: () -> Unit,
     onOpenSystemSettings: () -> Unit,
     modifier: Modifier = Modifier,
+    onStandby: () -> Unit = {},
+    onDetectLine: () -> Unit = {},
+    detectMessage: String? = null,
     mode: String = "SETUP",
-    onStartStandby: () -> Unit = {},
+    mapping: PreviewMapping = PreviewMapping(),
     preview: @Composable () -> Unit = {},
 ) {
     Box(
@@ -59,6 +70,16 @@ fun SetupScreen(
             preview()
         } else {
             PermissionRationale(permission, onRequestPermissions, onOpenSystemSettings)
+        }
+        var lineEditing by rememberSaveable { mutableStateOf(false) }
+        if (permission == PermissionUi.GRANTED) {
+            FinishLineOverlay(
+                line = settings.finishLine,
+                mapping = mapping,
+                frameAspect = settings.resolution.width.toFloat() / settings.resolution.height,
+                editing = lineEditing,
+                onLineChange = onFinishLineChange,
+            )
         }
         StatusOverlay(
             mode = mode,
@@ -76,16 +97,54 @@ fun SetupScreen(
                     .padding(16.dp)
                     .testTag(TestTags.SETTINGS_BUTTON),
             ) { Text(if (settingsOpen) "Close" else "Settings") }
+            if (!settingsOpen) {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .windowInsetsPadding(WindowInsets.safeDrawing)
+                        .padding(start = 16.dp, top = 64.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Button(
+                        onClick = { lineEditing = !lineEditing },
+                        modifier = Modifier.testTag(TestTags.LINE_BUTTON),
+                    ) { Text(if (lineEditing) "Done" else "Finish line") }
+                    Button(
+                        onClick = {
+                            lineEditing = true
+                            onDetectLine()
+                        },
+                        modifier = Modifier.testTag(TestTags.DETECT_BUTTON),
+                    ) { Text("Detect line") }
+                    detectMessage?.let {
+                        Text(
+                            it,
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelLarge,
+                            modifier = Modifier
+                                .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                                .testTag(TestTags.DETECT_MESSAGE),
+                        )
+                    }
+                    if (lineEditing && settings.finishLine != null) {
+                        Button(
+                            onClick = { onFinishLineChange(null) },
+                            modifier = Modifier.testTag(TestTags.LINE_CLEAR_BUTTON),
+                        ) { Text("Clear") }
+                    }
+                }
+            }
         }
         if (permission == PermissionUi.GRANTED && !settingsOpen) {
             Button(
-                onClick = onStartStandby,
+                onClick = onStandby,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .windowInsetsPadding(WindowInsets.safeDrawing)
-                    .padding(16.dp)
-                    .testTag(TestTags.START_STANDBY_BUTTON),
-            ) { Text("Start standby") }
+                    .padding(24.dp)
+                    .testTag(TestTags.STANDBY_BUTTON),
+            ) { Text("Standby") }
         }
         if (settingsOpen && permission == PermissionUi.GRANTED) {
             SettingsOverlay(
@@ -157,7 +216,7 @@ private fun PermissionRationale(
 }
 
 @Composable
-private fun StatusOverlay(mode: String, modifier: Modifier = Modifier) {
+internal fun StatusOverlay(mode: String, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .background(Color.White.copy(alpha = 0.85f), RoundedCornerShape(8.dp))
@@ -214,6 +273,13 @@ fun SettingsOverlay(
             ToggleRow("Bell detection", settings.bellAutomation, TestTags.TOGGLE_BELL) {
                 onChange(settings.copy(bellAutomation = it))
             }
+            Label("Bell sensitivity")
+            Chips(
+                options = BellSensitivity.entries,
+                selected = settings.bellSensitivity,
+                label = ::sensitivityLabel,
+                enabled = { settings.bellAutomation },
+            ) { onChange(settings.copy(bellSensitivity = it)) }
             ToggleRow("Flag detection", settings.flagAutomation, TestTags.TOGGLE_FLAG) {
                 onChange(settings.copy(flagAutomation = it))
             }
@@ -245,6 +311,12 @@ fun SettingsOverlay(
 }
 
 private const val DEFAULT_OVERRIDE_VOLUME = 80
+
+fun sensitivityLabel(s: BellSensitivity): String = when (s) {
+    BellSensitivity.LOW -> "Low"
+    BellSensitivity.MEDIUM -> "Medium"
+    BellSensitivity.HIGH -> "High"
+}
 
 @Composable
 private fun Label(text: String) =
