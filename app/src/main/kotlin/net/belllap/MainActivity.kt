@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
+import android.view.KeyEvent
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -36,6 +37,7 @@ import net.belllap.capture.PreviewSession
 import net.belllap.core.model.CameraCapabilities
 import net.belllap.core.model.CaptureSettings
 import net.belllap.core.model.PreviewMapping
+import net.belllap.core.model.VolumeKey
 import net.belllap.core.service.SessionForegroundService
 import net.belllap.core.service.dimmedStandby
 import net.belllap.core.statemachine.State
@@ -78,6 +80,28 @@ class MainActivity : ComponentActivity() {
         } else {
             window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
+    }
+
+    /** Volume keys act as shortcuts while the session is running (F38); a repeat from a held key is swallowed. */
+    private fun volumeKeyOf(keyCode: Int): VolumeKey? = when (keyCode) {
+        KeyEvent.KEYCODE_VOLUME_UP -> VolumeKey.UP
+        KeyEvent.KEYCODE_VOLUME_DOWN -> VolumeKey.DOWN
+        else -> null
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        val key = volumeKeyOf(keyCode)
+        if (key != null && (application as BellLapApp).session.volumeKey(key, repeat = event.repeatCount > 0)) {
+            return true
+        }
+        return super.onKeyDown(keyCode, event)
+    }
+
+    override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
+        val key = volumeKeyOf(keyCode)
+        val session = (application as BellLapApp).session
+        if (key != null && session.mapped(key)) return true
+        return super.onKeyUp(keyCode, event)
     }
 
     @SuppressLint("BatteryLife")

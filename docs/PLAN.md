@@ -306,7 +306,7 @@ Bug reports:
 - [ ] **F35 ML flag detector:** ([#29](https://github.com/surpdeh/belllap/issues/29)) EfficientDet-Lite0 single-class model, with a training pipeline and dataset from consented field footage.
 - [ ] **F36 Rider detection and tracking:** ([#30](https://github.com/surpdeh/belllap/issues/30)) splits bunches and refines front-wheel crossing time in post-process.
 - [ ] **F37 Wear OS remote:** ([#31](https://github.com/surpdeh/belllap/issues/31)) watch tile and app with "Record now", "Bell now", "Stop" and a status view.
-- [ ] **F38 Volume-key shortcut:** ([#32](https://github.com/surpdeh/belllap/issues/32)) a hardware key arms or starts recording while the app is in the foreground.
+- [x] **F38 Volume-key shortcut:** ([#32](https://github.com/surpdeh/belllap/issues/32)) a hardware key arms or starts recording while the app is in the foreground.
 - [ ] **F40 Real-device CI:** ([#33](https://github.com/surpdeh/belllap/issues/33)) nightly Firebase Test Lab matrix of capability probes and camera smoke tests.
 - [ ] **F41 Release pipeline:** ([#34](https://github.com/surpdeh/belllap/issues/34)) signed AAB/APK on tag, GitHub Release, Play internal track (pending decision §1.7).
 
