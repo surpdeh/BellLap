@@ -1,17 +1,25 @@
 package net.belllap.capture
 
 import android.content.Context
+import android.graphics.SurfaceTexture
 import android.util.Log
 import android.util.Range
 import android.util.Size
+import android.view.Surface
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
+import androidx.camera.core.SessionConfig
 import androidx.camera.core.SurfaceRequest
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.video.FallbackStrategy
+import androidx.camera.video.Quality
+import androidx.camera.video.QualitySelector
+import androidx.camera.video.Recorder
+import androidx.camera.video.VideoCapture
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.CompletableDeferred
@@ -20,6 +28,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import net.belllap.core.model.CameraCapabilities
 import net.belllap.core.model.CameraFacing
 import net.belllap.core.model.CaptureSettings
+import net.belllap.core.model.Resolution
 import net.belllap.vision.core.Frame
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
@@ -31,7 +40,10 @@ private const val TAG = "BellLapCamera"
 /** The camera could not be initialised or bound (no camera, init failure, in use). */
 class CameraUnavailableException(message: String, cause: Throwable) : Exception(message, cause)
 
-/** Binds a CameraX Preview for [settings]; used by the setup screen for tripod alignment. */
+/**
+ * Binds one CameraX [SessionConfig] of Preview, ImageAnalysis and VideoCapture for [settings] (F17). The setup screen
+ * shows the preview for tripod alignment; the armed screens bind it with a discarded surface and record from it.
+ */
 object PreviewSession {
     /**
      * Binds the preview and returns the probed capabilities of the chosen camera.
@@ -76,7 +88,6 @@ object PreviewSession {
             .build()
         val preview = Preview.Builder()
             .setResolutionSelector(resolution)
-            .setTargetFrameRate(Range(settings.fps.value, settings.fps.value))
             .build()
             .also {
                 it.setSurfaceProvider(ContextCompat.getMainExecutor(context)) { request ->
@@ -89,13 +100,57 @@ object PreviewSession {
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .build()
             .also { it.setAnalyzer(analysisExecutor, ::onAnalysisFrame) }
+        val recorder = Recorder.Builder().setQualitySelector(qualityFor(settings.resolution)).build()
+        val video = VideoCapture.withOutput(recorder)
+        val fps = Range(settings.fps.value, settings.fps.value)
         provider.unbindAll()
-        val camera = provider.bindToLifecycle(owner, selector, preview, analysis)
+        latestPtsUs = null
+        videoCapture = null
+        val camera = provider.bindToLifecycle(
+            owner,
+            selector,
+            SessionConfig(useCases = listOf(preview, analysis, video), frameRateRange = fps),
+        )
+        videoCapture = video
         Log.i(TAG, "bind: bound, cameraId=${camera.cameraInfo}")
         return probeCapabilities(camera.cameraInfo)
     }
 
     private val analysisExecutor = Executors.newSingleThreadExecutor()
+
+    /** The bound recorder use case, or null while no camera is bound. Read by [CameraXAcquisitionSink]. */
+    @Volatile
+    internal var videoCapture: VideoCapture<Recorder>? = null
+        private set
+
+    /** PTS in microseconds (camera clock) of the newest analysis frame, or null before the first one. */
+    @Volatile
+    internal var latestPtsUs: Long? = null
+        private set
+
+    private fun qualityFor(resolution: Resolution) = QualitySelector.from(
+        when (resolution) {
+            Resolution.HD_720 -> Quality.HD
+            Resolution.FHD_1080 -> Quality.FHD
+            Resolution.UHD_2160 -> Quality.UHD
+        },
+        FallbackStrategy.lowerQualityOrHigherThan(Quality.SD),
+    )
+
+    /**
+     * Gives a [SurfaceRequest] a surface nobody looks at, so the bound session runs with no visible preview. The
+     * dimmed standby screen stays black while analysis and recording carry on.
+     */
+    fun discardSurface(context: Context, request: SurfaceRequest) {
+        val texture = SurfaceTexture(
+            0,
+        ).apply { setDefaultBufferSize(request.resolution.width, request.resolution.height) }
+        val surface = Surface(texture)
+        request.provideSurface(surface, ContextCompat.getMainExecutor(context)) {
+            surface.release()
+            texture.release()
+        }
+    }
 
     @Volatile
     private var wanted: CompletableDeferred<Frame>? = null
@@ -116,6 +171,7 @@ object PreviewSession {
 
     private fun onAnalysisFrame(image: ImageProxy) {
         image.use {
+            latestPtsUs = it.imageInfo.timestamp / NANOS_PER_MICRO
             val request = wanted ?: return
             val plane = it.planes[0]
             val buffer = plane.buffer
@@ -125,6 +181,7 @@ object PreviewSession {
     }
 
     private const val GRAB_TIMEOUT_MS = 3000L
+    private const val NANOS_PER_MICRO = 1000L
 
     private suspend fun awaitProvider(context: Context): ProcessCameraProvider =
         suspendCancellableCoroutine { cont ->

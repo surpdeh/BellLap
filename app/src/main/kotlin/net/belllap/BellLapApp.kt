@@ -1,6 +1,7 @@
 package net.belllap
 
 import android.app.Application
+import android.os.Build
 import android.os.SystemClock
 import androidx.core.content.edit
 import kotlinx.coroutines.Dispatchers
@@ -13,18 +14,21 @@ import net.belllap.audio.android.AudioRecordPcmRecorder
 import net.belllap.audio.android.YamnetBellClassifier
 import net.belllap.audio.bell.BellClassifier
 import net.belllap.audio.source.MicAudioSource
+import net.belllap.capture.CameraXAcquisitionSink
 import net.belllap.capture.DeviceProbe
 import net.belllap.core.log.AndroidInfo
 import net.belllap.core.log.EventLog
 import net.belllap.core.log.RollingFileTree
 import net.belllap.core.model.DeviceCapabilities
 import net.belllap.core.service.AlarmBeepPlayer
+import net.belllap.core.model.SidecarDevice
 import net.belllap.core.service.SessionHost
 import net.belllap.core.service.SessionHostProvider
 import net.belllap.session.EventLogSessionLog
 import net.belllap.session.SessionController
 import timber.log.Timber
 import java.io.File
+import java.time.LocalDate
 
 class BellLapApp : Application(), SessionHostProvider {
     lateinit var eventLog: EventLog
@@ -50,6 +54,10 @@ class BellLapApp : Application(), SessionHostProvider {
             classifier = { bellClassifier },
             log = EventLogSessionLog(eventLog),
             beeps = AlarmBeepPlayer(this) { session.alertVolumePercent },
+            sink = CameraXAcquisitionSink(this, File(filesDir, "acquisitions")),
+            device = SidecarDevice(Build.MANUFACTURER, Build.MODEL, Build.VERSION.SDK_INT),
+            appVersion = BuildConfig.VERSION_NAME,
+            eventLabel = { LocalDate.now().toString() },
             audioDispatcher = Dispatchers.IO,
         )
     }
