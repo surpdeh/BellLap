@@ -299,6 +299,7 @@ Bug reports:
 ### M2: Post-MVP (rough priority order)
 
 - [ ] **F30 Pre-roll ring buffer:** ([#24](https://github.com/surpdeh/belllap/issues/24)) custom MediaCodec encoder, keeping the last N seconds encoded in RAM and flushing them on flag detection. Short GOP.
+  - Done so far: `PreRollBuffer` (pure, tested) and `PreRollEncoder` (surface-input H.264, 1 s GOP, MP4 splice) with an emulator splice test. Not yet done: feeding it camera frames in the armed session (needs the F31 GL tap or a Surface tee) and the tier 3 device recording.
 - [ ] **F31 High-fps capture:** ([#25](https://github.com/surpdeh/belllap/issues/25)) 120/240 fps through `HighSpeedVideoSessionConfig`, with a GL preview tap for flag and slit-scan analysis. Only on capable devices.
 - [ ] **F32 Photo-finish strip view in review:** ([#26](https://github.com/surpdeh/belllap/issues/26)) tapping a column seeks to that frame.
 - [ ] **F33 Locked-screen standby:** ([#27](https://github.com/surpdeh/belllap/issues/27)) a per-device self-test, wake on bell with `setShowWhenLocked`/`setTurnScreenOn`, and a headless camera fallback.
