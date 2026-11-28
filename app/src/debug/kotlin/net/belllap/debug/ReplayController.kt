@@ -10,6 +10,7 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import net.belllap.audio.source.WavFileAudioSource
+import net.belllap.capture.MediaCodecVideoDecoder
 import net.belllap.core.log.EventLog
 import net.belllap.core.replay.ReplayListener
 import net.belllap.core.replay.ReplaySession
