@@ -1,0 +1,92 @@
+{
+ "schema": 1,
+ "context": {
+  "run_id": "46122708807",
+  "run_attempt": "1",
+  "sha": "1f68a9e681b2da567c4ed5b0c3d908c9b4d63df2",
+  "ref": "refs/pull/63/merge",
+  "event": "pull_request",
+  "runner_os": "ubuntu26",
+  "runner_image_version": "20261122.9.1",
+  "avd_cache_hit": "true",
+  "boot": "snapshot",
+  "cpus": 4
+ },
+ "phases_at_s": {
+  "emulator_ready": 0.0,
+  "apks_ready": 7.0,
+  "tests_start": 7.1,
+  "tests_end": 415.7,
+  "evidence_collected": 419.2
+ },
+ "phase_spans_s": {
+  "emulator_ready->apks_ready": 7.0,
+  "apks_ready->tests_start": 0.0,
+  "tests_start->tests_end": 408.6,
+  "tests_end->evidence_collected": 3.6
+ },
+ "tests_total_s": 372.9,
+ "tests": [
+  {
+   "module": "app",
+   "class": "net.belllap.ReplayRaceSynthTest",
+   "name": "journeyAtRealTimeShowsEveryMode",
+   "seconds": 179.358,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.ReplayRaceSynthTest",
+   "name": "replaysRaceSynthAndLogsTheEventSequence",
+   "seconds": 162.002,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.LaunchTest",
+   "name": "launchesToSetupScreen",
+   "seconds": 21.435,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.StandbyBellNowTest",
+   "name": "bellNowArmsFromStandby",
+   "seconds": 8.545,
+   "outcome": "passed"
+  },
+  {
+   "module": "audio:android",
+   "class": "net.belllap.audio.android.YamnetOnDeviceTest",
+   "name": "fullCascadeWithYamnetFindsBothBellLapsInTheFixture",
+   "seconds": 0.787,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.DeviceProbeTest",
+   "name": "probesTheDeviceAndSavesJson",
+   "seconds": 0.773,
+   "outcome": "passed"
+  },
+  {
+   "module": "audio:android",
+   "class": "net.belllap.audio.android.YamnetOnDeviceTest",
+   "name": "modelLoadsAndScoresSilenceLowAndAllClassesAsProbabilities",
+   "seconds": 0.03,
+   "outcome": "passed"
+  }
+ ],
+ "in_test_phases_s": {
+  "replaysRaceSynth": {
+   "prepare_wait": 15.434,
+   "replay": 133.412
+  },
+  "journey": {
+   "prepare": 4.949,
+   "prepare_wait": 0.045,
+   "replay": 47.835,
+   "total": 165.858
+  }
+ }
+}
