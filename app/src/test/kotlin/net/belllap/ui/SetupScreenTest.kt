@@ -104,6 +104,19 @@ class SetupScreenTest {
     }
 
     @Test
+    fun eachAlertToggleSwitchesOneCue() {
+        var latest: CaptureSettings? = null
+        composeRule.setContent { Screen(settingsOpen = true, onChange = { latest = it }) }
+
+        composeRule.onNodeWithTag(TestTags.TOGGLE_ARMED_BEEPS).performScrollTo().performClick()
+        assertEquals(CaptureSettings(armedBeeps = false), latest)
+        composeRule.onNodeWithTag(TestTags.TOGGLE_STAND_DOWN_CHIME).performScrollTo().performClick()
+        assertEquals(CaptureSettings(standDownChime = false), latest)
+        composeRule.onNodeWithTag(TestTags.TOGGLE_BEEPS).performScrollTo().performClick()
+        assertEquals(CaptureSettings(crossingBeeps = false), latest)
+    }
+
+    @Test
     fun bellSensitivityChipsSetTheSettingAndFollowTheBellToggle() {
         var latest: CaptureSettings? = null
         composeRule.setContent { Screen(settingsOpen = true, onChange = { latest = it }) }
