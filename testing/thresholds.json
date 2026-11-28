@@ -13,7 +13,12 @@
     "race.bell.recall": 1.0,
     "race.flag.iou": 0.8,
     "race.crossings.recall": 0.9,
-    "banner.flag.iou": 1.0
+    "banner.flag.iou": 1.0,
+    "crossings.crossings_refined.recall": 0.9,
+    "crossings.crossings_refined.precision": 0.9,
+    "race.crossings.precision": 0.9,
+    "race.crossings_refined.recall": 0.9,
+    "race.crossings_refined.precision": 0.9
   },
   "max": {
     "bell_snr20.bell.false_alarms_per_hour": 0.0,
@@ -24,12 +29,20 @@
     "ambience.bell.false_alarms_per_hour": 0.19,
     "all.bell.max_latency_ms": 1500.0,
     "flag.flag.interval_count_error": 0.0,
-    "crossings.crossings.mean_abs_error_frames": 0.5,
     "race.flag.interval_count_error": 0.0,
     "race.bell.false_alarms_per_hour": 0.0,
     "flag.flag.max_start_error_ms": 1000.0,
     "banner.flag.false_visible_ms": 0.0,
     "banner.flag.interval_count_error": 0.0,
-    "race.flag.max_start_error_ms": 1000.0
+    "race.flag.max_start_error_ms": 1000.0,
+    "crossings.crossings.count_error_per_bunch": 1.0,
+    "crossings.crossings.max_abs_error_frames": 2.0,
+    "crossings.crossings_refined.count_error_per_bunch": 1.0,
+    "crossings.crossings_refined.max_abs_error_frames": 2.0,
+    "race.crossings.count_error_per_bunch": 1.0,
+    "race.crossings.max_abs_error_frames": 2.0,
+    "race.crossings_refined.count_error_per_bunch": 1.0,
+    "race.crossings_refined.max_abs_error_frames": 2.0,
+    "crossings.crossings.mean_abs_error_frames": 0.5
   }
 }

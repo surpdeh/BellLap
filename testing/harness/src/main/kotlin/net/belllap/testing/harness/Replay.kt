@@ -116,7 +116,7 @@ fun main(args: Array<String>) {
 private fun writeMetrics(file: File, metrics: Map<String, Double>, violations: List<String>, stage1: Stage1) {
     val doc = buildJsonObject {
         put("schemaVersion", 1)
-        put("source", "synthetic fixtures, seed ${Fixtures.DEFAULT_SEED}; bell cascade, baseline flag/crossings")
+        put("source", "synthetic fixtures, seed ${Fixtures.DEFAULT_SEED}; bell cascade, flag F16, crossings F18")
         put("bellStage1", stage1.label)
         put("metrics", buildJsonObject { metrics.forEach { (k, v) -> put(k, v) } })
         put("violations", JsonArray(violations.map(::JsonPrimitive)))
@@ -138,6 +138,7 @@ private fun writeEvidence(outDir: File, fixturesDir: File) {
         File(outDir, "contact-sheet.png"),
     )
     writeFlagOverlays(outDir, fixturesDir)
+    writeCrossingStrip(outDir, fixturesDir)
     val bell = File(fixturesDir, "bell_snr10_distractors")
     val bellLabels = Labels.load(File(bell, Labels.FILE_NAME))
     val wav = WavIo.read(File(bell, requireNotNull(bellLabels.audioFile)))
@@ -157,6 +158,15 @@ private fun writeFlagOverlays(outDir: File, fixturesDir: File) {
         val i = (atS * requireNotNull(labels.fps)).toInt()
         ImageIO.write(FlagOverlay.render(frames[i], run.results[i]), "png", File(outDir, file))
     }
+}
+
+/** `crossings-strip.png`: the slit-scan strip of the `crossings` fixture, detected onsets red, labels yellow. */
+private fun writeCrossingStrip(outDir: File, fixturesDir: File) {
+    val dir = File(fixturesDir, "crossings")
+    val labels = Labels.load(File(dir, Labels.FILE_NAME))
+    val run = CrossingRun.over(ReplayRunner.loadFrames(dir, labels))
+    val image = StripImage.render(run.strips, run.live, labels.crossings.map { it.frame })
+    ImageIO.write(image, "png", File(outDir, "crossings-strip.png"))
 }
 
 private const val FLAG_HIT_S = 6.0

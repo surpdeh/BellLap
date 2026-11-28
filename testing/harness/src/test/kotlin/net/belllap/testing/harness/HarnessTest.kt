@@ -98,8 +98,9 @@ class HarnessTest {
     @Test
     fun crossingDetectorStaysQuietOnAnEmptyRoad() {
         val flag: List<Frame> = Fixtures.flag().frames!!
-        val d = BaselineCrossingDetector().also { det -> flag.forEach(det::accept) }
-        assertEquals(0, d.crossingsNs.size)
+        val run = CrossingRun.over(flag)
+        assertEquals(0, run.live.size)
+        assertEquals(0, run.refined.size)
     }
 
     @Test
