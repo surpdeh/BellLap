@@ -35,7 +35,5 @@ interface AcquisitionSink {
      */
     var onSaved: ((SavedAcquisition) -> Unit)?
         get() = null
-        set(
-            @Suppress("UNUSED_PARAMETER") value
-        ) = Unit
+        set(@Suppress("UNUSED_PARAMETER") value) = Unit
 }
