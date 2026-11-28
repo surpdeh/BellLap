@@ -29,10 +29,12 @@ import net.belllap.core.statemachine.State
 import net.belllap.session.BellStatus
 
 private val BellAmber = Color(0xFFFFB300)
+private val NoticeRed = Color(0xFFFF8A80)
 
 /**
  * STANDBY and the modes after it until the camera screens exist (F13, F16, F17). Black, because the default
- * standby is dimmed and kept on. The big "Bell now" button arms by hand and is always there in STANDBY.
+ * standby is dimmed and kept on. The big "Bell now" button arms by hand and is always there in STANDBY, and
+ * "Record now" starts an acquisition by hand in ARMED (F17). [notice] shows why a recording did not start.
  */
 @Composable
 fun StandbyScreen(
@@ -41,6 +43,8 @@ fun StandbyScreen(
     onBellNow: () -> Unit,
     onStop: () -> Unit,
     modifier: Modifier = Modifier,
+    onRecordNow: () -> Unit = {},
+    notice: String? = null,
 ) {
     val inner = if (state is State.Review) state.underlying else state
     Box(
@@ -70,6 +74,20 @@ fun StandbyScreen(
                 ) {
                     Text("Bell now", fontSize = 32.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
                 }
+            }
+            if (inner == State.Armed) {
+                OutlinedButton(onClick = onRecordNow, modifier = Modifier.testTag(TestTags.RECORD_NOW_BUTTON)) {
+                    Text("Record now", color = Color.White, fontSize = 24.sp)
+                }
+            }
+            notice?.let {
+                Text(
+                    text = it,
+                    color = NoticeRed,
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.testTag(TestTags.RECORD_NOTICE),
+                )
             }
             Text(
                 text = statusLine(inner, bell),
@@ -104,6 +122,7 @@ fun modeName(state: State): String = when (state) {
 internal fun statusLine(state: State, bell: BellStatus): String = when {
     state == State.Arming -> "Bell lap! Arming the camera."
     state == State.Armed -> "Armed. Waiting for the chequered flag."
+    state is State.Acquisition -> "Recording the finish."
     state != State.Standby -> ""
     bell.error != null -> "Bell detection stopped: ${bell.error}. Use Bell now."
     !bell.listening -> "Bell detection is off. Use Bell now."

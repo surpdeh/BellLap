@@ -28,6 +28,8 @@ object TestTags {
     const val STANDBY_BUTTON = "standby_button"
     const val STANDBY_SCREEN = "standby_screen"
     const val BELL_NOW_BUTTON = "bell_now_button"
+    const val RECORD_NOW_BUTTON = "record_now_button"
+    const val RECORD_NOTICE = "record_notice"
     const val BELL_STATUS = "bell_status"
     const val STOP_BUTTON = "stop_button"
     const val ONBOARDING_SCREEN = "onboarding_screen"

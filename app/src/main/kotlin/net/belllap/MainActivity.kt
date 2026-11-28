@@ -26,13 +26,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.datastore.preferences.preferencesDataStore
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import net.belllap.capture.CameraUnavailableException
 import net.belllap.capture.PreviewSession
 import net.belllap.core.model.CameraCapabilities
 import net.belllap.core.model.CaptureSettings
@@ -41,8 +44,9 @@ import net.belllap.core.model.VolumeKey
 import net.belllap.core.service.SessionForegroundService
 import net.belllap.core.service.dimmedStandby
 import net.belllap.core.statemachine.State
-import net.belllap.session.volumeKey
 import net.belllap.debug.DebugEntry
+import net.belllap.session.cameraNeeded
+import net.belllap.session.volumeKey
 import net.belllap.settings.SettingsRepository
 import net.belllap.ui.CameraPreview
 import net.belllap.ui.OEM_TIPS_URL
@@ -54,6 +58,7 @@ import net.belllap.ui.StandbyScreen
 import net.belllap.ui.detectMessageFor
 import net.belllap.ui.permissionUi
 import net.belllap.vision.finishline.WhiteLineDetector
+import timber.log.Timber
 
 private val android.content.Context.settingsStore by preferencesDataStore("capture_settings")
 
@@ -71,6 +76,7 @@ private fun volumeKeyOf(keyCode: Int): VolumeKey? = when (keyCode) {
     else -> null
 }
 
+@Suppress("TooManyFunctions")
 class MainActivity : ComponentActivity() {
     private fun allGranted() = REQUIRED_PERMISSIONS.all {
         ContextCompat.checkSelfPermission(this, it) == android.content.pm.PackageManager.PERMISSION_GRANTED
@@ -108,6 +114,17 @@ class MainActivity : ComponentActivity() {
         val key = volumeKeyOf(keyCode) ?: return super.onKeyUp(keyCode, event)
         return (application as BellLapApp).session.volumeKey(key, down = false) || super.onKeyUp(keyCode, event)
     }
+
+    /** ARMING, ARMED and ACQUISITION keep the screen on: the camera is bound to this activity's lifecycle. */
+    private fun applyKeepOn(keepOn: Boolean) {
+        if (keepOn) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else if (!dimmedStandby(session().state.value)) {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
+
+    private fun session() = (application as BellLapApp).session
 
     @SuppressLint("BatteryLife")
     @Composable
@@ -148,9 +165,11 @@ class MainActivity : ComponentActivity() {
                 val settings by repo.settings.collectAsState(initial = CaptureSettings())
                 val state by session.state.collectAsState()
                 val bell by session.bell.collectAsState()
+                val notice by session.notice.collectAsState()
                 LaunchedEffect(settings) { session.updateSettings(settings) }
                 val device by (application as BellLapApp).deviceCapabilities.collectAsState()
                 LaunchedEffect(dimmedStandby(state)) { applyDimming(dimmedStandby(state)) }
+                LaunchedEffect(cameraNeeded(state)) { applyKeepOn(cameraNeeded(state)) }
                 var onboarded by rememberSaveable { mutableStateOf(false) }
                 var capabilities by remember { mutableStateOf<CameraCapabilities?>(null) }
                 var mapping by remember { mutableStateOf(PreviewMapping()) }
@@ -167,7 +186,15 @@ class MainActivity : ComponentActivity() {
                 if (showOnboarding(state, onboarded, granted)) {
                     Onboarding(granted, { launcher.launch(REQUIRED_PERMISSIONS) }, { onboarded = true })
                 } else if (state != State.Setup && granted) {
-                    StandbyScreen(state, bell, onBellNow = session::bellNow, onStop = session::stop)
+                    if (cameraNeeded(state)) HiddenCamera(settings)
+                    StandbyScreen(
+                        state,
+                        bell,
+                        onBellNow = session::bellNow,
+                        onStop = session::stop,
+                        onRecordNow = session::recordNow,
+                        notice = notice,
+                    )
                 } else {
                     Box {
                         SetupScreen(
@@ -198,6 +225,20 @@ class MainActivity : ComponentActivity() {
                         DebugEntry()
                     }
                 }
+            }
+        }
+    }
+
+    /** Keeps the camera bound for recording while the black screen shows, so nothing bright appears (F17). */
+    @Composable
+    private fun HiddenCamera(settings: CaptureSettings) {
+        val context = LocalContext.current
+        val owner = LocalLifecycleOwner.current
+        LaunchedEffect(settings.facing, settings.resolution, settings.fps) {
+            try {
+                PreviewSession.bind(context, owner, settings) { PreviewSession.discardSurface(context, it) }
+            } catch (e: CameraUnavailableException) {
+                Timber.w(e, "Camera unavailable for recording")
             }
         }
     }

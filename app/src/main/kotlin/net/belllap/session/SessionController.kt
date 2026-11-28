@@ -14,8 +14,15 @@ import net.belllap.audio.bell.BellDetector
 import net.belllap.audio.bell.BellDetectorConfig
 import net.belllap.audio.bell.BellTrace
 import net.belllap.audio.source.AudioSource
+import net.belllap.core.model.AcquisitionNaming
+import net.belllap.core.model.AcquisitionSink
 import net.belllap.core.model.BellSensitivity
 import net.belllap.core.model.CaptureSettings
+import net.belllap.core.model.FlagIntervalTracker
+import net.belllap.core.model.RecordingUnavailableException
+import net.belllap.core.model.Sidecar
+import net.belllap.core.model.SidecarDevice
+import net.belllap.core.model.StorageGuard
 import net.belllap.core.service.SessionHost
 import net.belllap.core.statemachine.BeepSink
 import net.belllap.core.statemachine.Cue
@@ -24,6 +31,7 @@ import net.belllap.core.statemachine.Event
 import net.belllap.core.statemachine.SessionMachine
 import net.belllap.core.statemachine.State
 import net.belllap.core.statemachine.cueOrNull
+import java.util.UUID
 import kotlin.coroutines.cancellation.CancellationException
 
 /** What the bell listener is doing, for the STANDBY screen. */
@@ -50,7 +58,12 @@ interface SessionLog {
  * are decided; the detector itself only sees audio PTS. [openAudio] opens a fresh source each time STANDBY starts
  * listening, and [classifier] is the stage-1 model, loaded once and reused. Audible effects go to [beeps] when the
  * current settings allow that cue (F15).
+ *
+ * Recording (F17): the machine's StartRecording and StopRecording effects are routed to [sink], and flag visibility
+ * changes are tracked by the sink's frame PTS for the sidecar. [eventLabel] names the day's acquisitions ("<label>
+ * Finish N"); it is a label, not a time base.
  */
+@Suppress("TooManyFunctions")
 class SessionController(
     private val scope: CoroutineScope,
     private val nowMs: () -> Long,
@@ -58,22 +71,32 @@ class SessionController(
     private val classifier: () -> BellClassifier,
     private val log: SessionLog,
     private val beeps: BeepSink,
+    private val sink: AcquisitionSink,
+    private val device: SidecarDevice,
+    private val appVersion: String,
+    private val eventLabel: () -> String,
     private val audioDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : SessionHost {
     private val machine = SessionMachine(nowMs = nowMs())
     private val mutableState = MutableStateFlow<State>(machine.state)
     private val mutableBell = MutableStateFlow(BellStatus())
+
     /** The settings last passed to [updateSettings]. */
     var settings = CaptureSettings()
         private set
     private var timer: Job? = null
     private var listener: Job? = null
+    private var active: ActiveRecording? = null
+    private val mutableNotice = MutableStateFlow<String?>(null)
 
     /** The alert-stream level for cues: the custom percent, or 100 (maximum) by default. */
     val alertVolumePercent: Int @Synchronized get() = settings.alertVolumePercent ?: MAX_VOLUME_PERCENT
 
     override val state: StateFlow<State> = mutableState.asStateFlow()
     val bell: StateFlow<BellStatus> = mutableBell.asStateFlow()
+
+    /** The latest recording problem for the user (storage guard, camera), or null. Cleared when a recording starts. */
+    val notice: StateFlow<String?> = mutableNotice.asStateFlow()
 
     @Synchronized
     fun updateSettings(new: CaptureSettings) {
@@ -88,6 +111,8 @@ class SessionController(
     fun standby() = dispatch(Event.StandbyRequested, "user")
 
     fun bellNow() = dispatch(Event.BellNow, "user")
+
+    fun recordNow() = dispatch(Event.RecordNow, "user")
 
     fun stop() = dispatch(Event.Stop, "user")
 
@@ -105,14 +130,23 @@ class SessionController(
         afterChange(before, effects, "timer")
     }
 
-    /** Beeps (F15) are played here; brightness and recording effects are F13 and F17. */
+    /** Beeps (F15) and recording (F17) are played here; brightness is F13. */
     private fun afterChange(before: State, effects: List<Effect>, trigger: String) {
         effects.mapNotNull { it.cueOrNull() }.filter(settings::allows).forEach(beeps::play)
         val after = machine.state
         if (after != before) log.transition(before, after, trigger)
+        var refused = false
+        effects.forEach { effect ->
+            when (effect) {
+                Effect.StartRecording -> refused = !startRecording() || refused
+                Effect.StopRecording -> stopRecording()
+                else -> Unit
+            }
+        }
+        trackFlag()
         // Sync the listener first, so anyone who sees the new state also sees the listener status that goes with it.
         syncListener()
-        mutableState.value = after
+        mutableState.value = machine.state
         timer?.cancel()
         timer = machine.nextDeadlineMs?.let { deadline ->
             scope.launch {
@@ -120,9 +154,76 @@ class SessionController(
                 tick()
             }
         }
+        // A refused start leaves ACQUISITION through the normal Stop path, so state and recorder never disagree.
+        if (refused) dispatch(Event.Stop, "recorder")
     }
 
-    private fun inStandby() = machine.state.let { if (it is State.Review) it.underlying else it } == State.Standby
+    private class ActiveRecording(
+        val id: String,
+        val name: String,
+        val settings: CaptureSettings,
+        val firstFramePtsUs: Long,
+        val flags: FlagIntervalTracker,
+    )
+
+    private fun flagVisible(): Boolean? =
+        (innerState() as? State.Acquisition)?.flagVisible
+
+    private fun innerState() = machine.state.let { if (it is State.Review) it.underlying else it }
+
+    /** Returns false when the recording was refused; the reason is in [notice]. */
+    private fun startRecording(): Boolean {
+        mutableNotice.value = null
+        val check = StorageGuard.check(sink.freeBytes(), settings.resolution, settings.fps)
+        if (!check.ok) {
+            mutableNotice.value = check.message
+            return false
+        }
+        val id = UUID.randomUUID().toString()
+        return try {
+            sink.start(id)
+            val firstPts = sink.latestFramePtsUs() ?: 0L
+            val name = AcquisitionNaming.nextName(eventLabel(), sink.existingNames())
+            active = ActiveRecording(
+                id, name, settings, firstPts, FlagIntervalTracker(firstPts, flagVisible() ?: false),
+            )
+            true
+        } catch (e: RecordingUnavailableException) {
+            mutableNotice.value = e.message ?: "Recording could not start."
+            false
+        }
+    }
+
+    private fun stopRecording() {
+        val rec = active ?: return
+        active = null
+        val endPts = sink.latestFramePtsUs() ?: rec.firstFramePtsUs
+        val sidecar = Sidecar(
+            id = rec.id,
+            name = rec.name,
+            videoFile = "acq_${rec.id}.mp4",
+            device = device,
+            fps = rec.settings.fps.value,
+            width = rec.settings.resolution.width,
+            height = rec.settings.resolution.height,
+            line = rec.settings.finishLine,
+            firstFramePtsUs = rec.firstFramePtsUs,
+            flagIntervals = rec.flags.finish(endPts),
+            appVersion = appVersion,
+        )
+        try {
+            sink.stop(rec.id, sidecar.encode())
+        } catch (e: RecordingUnavailableException) {
+            mutableNotice.value = e.message ?: "Recording could not be saved."
+        }
+    }
+
+    private fun trackFlag() {
+        val rec = active ?: return
+        flagVisible()?.let { rec.flags.setVisible(it, sink.latestFramePtsUs() ?: rec.firstFramePtsUs) }
+    }
+
+    private fun inStandby() = innerState() == State.Standby
 
     private fun syncListener() {
         val want = inStandby() && settings.bellAutomation
@@ -173,3 +274,9 @@ fun CaptureSettings.allows(cue: Cue): Boolean = when (cue) {
 }
 
 private const val MAX_VOLUME_PERCENT = 100
+
+/** The camera is bound from ARMING on, so it is ready when the flag is seen or "Record now" is pressed (F17). */
+fun cameraNeeded(state: State): Boolean =
+    (if (state is State.Review) state.underlying else state).let {
+        it == State.Arming || it == State.Armed || it is State.Acquisition
+    }
