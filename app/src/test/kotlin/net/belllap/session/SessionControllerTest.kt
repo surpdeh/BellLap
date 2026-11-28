@@ -20,6 +20,9 @@ import net.belllap.audio.source.PcmChunk
 import net.belllap.core.model.CaptureSettings
 import net.belllap.core.model.VolumeKey
 import net.belllap.core.model.VolumeKeyAction
+import net.belllap.core.statemachine.Cue
+import net.belllap.core.statemachine.Event
+import net.belllap.core.statemachine.FakeBeepSink
 import net.belllap.core.statemachine.State
 import net.belllap.testing.fixtures.Fixtures
 import org.junit.After
@@ -35,6 +38,7 @@ class SessionControllerTest {
     private val traces = Collections.synchronizedList(ArrayList<BellTrace>())
     private var clockMs = 0L
     private var opened = 0
+    private val beeps = FakeBeepSink()
 
     private val log = object : SessionLog {
         override fun transition(from: State, to: State, trigger: String) {
@@ -59,6 +63,7 @@ class SessionControllerTest {
         },
         classifier = { AcceptAllClassifier },
         log = log,
+        beeps = beeps,
     )
 
     private val silence = object : AudioSource {
@@ -134,7 +139,7 @@ class SessionControllerTest {
         assertEquals(State.Setup, c.state.value)
         c.standby()
         assertFalse("unmapped key is not swallowed", c.volumeKey(VolumeKey.DOWN))
-                assertEquals(State.Standby, c.state.value)
+        assertEquals(State.Standby, c.state.value)
     }
 
     @Test
@@ -161,6 +166,88 @@ class SessionControllerTest {
         assertTrue(c.volumeKey(VolumeKey.DOWN))
         assertEquals(State.Acquisition(flagVisible = false), c.state.value)
         assertTrue(transitions.last().endsWith("(volume_down:RecordNow)"))
+    }
+
+    /** Runs a full session on virtual time and returns the cues the sink heard. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun kotlinx.coroutines.test.TestScope.cuesForSession(settings: CaptureSettings): List<Cue> {
+        val c = controller(silence, scope = backgroundScope, nowMs = { testScheduler.currentTime })
+        c.updateSettings(settings.copy(bellAutomation = false))
+        c.standby()
+        c.bellNow()
+        testScheduler.advanceTimeBy(ARM_DELAY_MS)
+        testScheduler.runCurrent()
+        c.dispatch(Event.FlagSeen, "test")
+        testScheduler.advanceTimeBy(1_000)
+        c.dispatch(Event.CrossingDetected, "test")
+        c.stop()
+        return beeps.played
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun allCuesPlayInOrderThroughTheSession() = runTest {
+        assertEquals(
+            listOf(Cue.ARMED_BEEPS, Cue.CROSSING_BEEP, Cue.STAND_DOWN_CHIME),
+            cuesForSession(CaptureSettings()),
+        )
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun armedBeepsWaitForTheArmDelay() = runTest {
+        val c = controller(silence, scope = backgroundScope, nowMs = { testScheduler.currentTime })
+        c.updateSettings(CaptureSettings(bellAutomation = false))
+        c.standby()
+        c.bellNow()
+        advanceTimeBy(ARM_DELAY_MS - 1)
+        runCurrent()
+        assertEquals(emptyList<Cue>(), beeps.played)
+        advanceTimeBy(1)
+        runCurrent()
+        assertEquals(listOf(Cue.ARMED_BEEPS), beeps.played)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun armedBeepsOffPlaysTheOtherTwo() = runTest {
+        assertEquals(
+            listOf(Cue.CROSSING_BEEP, Cue.STAND_DOWN_CHIME),
+            cuesForSession(CaptureSettings(armedBeeps = false)),
+        )
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun crossingBeepsOffPlaysTheOtherTwo() = runTest {
+        assertEquals(
+            listOf(Cue.ARMED_BEEPS, Cue.STAND_DOWN_CHIME),
+            cuesForSession(CaptureSettings(crossingBeeps = false)),
+        )
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun standDownChimeOffPlaysTheOtherTwo() = runTest {
+        assertEquals(
+            listOf(Cue.ARMED_BEEPS, Cue.CROSSING_BEEP),
+            cuesForSession(CaptureSettings(standDownChime = false)),
+        )
+    }
+
+    @Test
+    fun settingsGateEveryCue() {
+        val none = CaptureSettings(armedBeeps = false, crossingBeeps = false, standDownChime = false)
+        assertTrue(Cue.entries.none { none.allows(it) })
+        assertTrue(Cue.entries.all { CaptureSettings().allows(it) })
+    }
+
+    @Test
+    fun alertVolumeDefaultsToMaximumAndFollowsTheCustomPercent() {
+        val c = controller(silence)
+        assertEquals(100, c.alertVolumePercent)
+        c.updateSettings(CaptureSettings(alertVolumePercent = 40))
+        assertEquals(40, c.alertVolumePercent)
     }
 
     private companion object {

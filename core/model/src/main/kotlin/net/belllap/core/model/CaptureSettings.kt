@@ -30,9 +30,13 @@ data class CaptureSettings(
     val bellAutomation: Boolean = true,
     val bellSensitivity: BellSensitivity = BellSensitivity.MEDIUM,
     val flagAutomation: Boolean = true,
+    /** Play the armed beep series (3 beeps) when the arm delay ends. */
+    val armedBeeps: Boolean = true,
     val crossingBeeps: Boolean = true,
+    /** Play the stand-down chime when the session stops recording. */
+    val standDownChime: Boolean = true,
     val flagTimeoutSeconds: Int = DEFAULT_FLAG_TIMEOUT_S,
-    /** Alert volume 0..100 that overrides the system volume, or null to follow the system. */
+    /** Alert-stream volume 0..100 for the cues, or null for the maximum. The previous level is restored after. */
     val alertVolumePercent: Int? = null,
     /** Volume-up key shortcut (F38). Off by default so the key keeps its system behaviour. */
     val volumeUpAction: VolumeKeyAction = VolumeKeyAction.OFF,

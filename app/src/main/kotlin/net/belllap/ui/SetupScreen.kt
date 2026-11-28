@@ -288,6 +288,9 @@ fun SettingsOverlay(
             ToggleRow("Flag detection", settings.flagAutomation, TestTags.TOGGLE_FLAG) {
                 onChange(settings.copy(flagAutomation = it))
             }
+            ToggleRow("Armed beeps", settings.armedBeeps, TestTags.TOGGLE_ARMED_BEEPS) {
+                onChange(settings.copy(armedBeeps = it))
+            }
             ToggleRow("Crossing beeps", settings.crossingBeeps, TestTags.TOGGLE_BEEPS) {
                 onChange(settings.copy(crossingBeeps = it))
             }
@@ -298,6 +301,9 @@ fun SettingsOverlay(
             Chips(VolumeKeyAction.entries, settings.volumeDownAction, { "Down: ${volumeActionLabel(it)}" }, { true }) {
                 onChange(settings.copy(volumeDownAction = it))
             }
+            ToggleRow("Stand-down chime", settings.standDownChime, TestTags.TOGGLE_STAND_DOWN_CHIME) {
+                onChange(settings.copy(standDownChime = it))
+            }
             Label("Flag timeout: ${settings.flagTimeoutSeconds} s")
             Slider(
                 value = settings.flagTimeoutSeconds.toFloat(),
@@ -306,7 +312,7 @@ fun SettingsOverlay(
                 modifier = Modifier.testTag(TestTags.FLAG_TIMEOUT_SLIDER),
             )
             val volume = settings.alertVolumePercent
-            ToggleRow("Override alert volume", volume != null, TestTags.TOGGLE_VOLUME) {
+            ToggleRow("Custom alert volume (default: maximum)", volume != null, TestTags.TOGGLE_VOLUME) {
                 onChange(settings.copy(alertVolumePercent = if (it) DEFAULT_OVERRIDE_VOLUME else null))
             }
             if (volume != null) {

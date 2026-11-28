@@ -17,9 +17,13 @@ import net.belllap.audio.source.AudioSource
 import net.belllap.core.model.BellSensitivity
 import net.belllap.core.model.CaptureSettings
 import net.belllap.core.service.SessionHost
+import net.belllap.core.statemachine.BeepSink
+import net.belllap.core.statemachine.Cue
+import net.belllap.core.statemachine.Effect
 import net.belllap.core.statemachine.Event
 import net.belllap.core.statemachine.SessionMachine
 import net.belllap.core.statemachine.State
+import net.belllap.core.statemachine.cueOrNull
 import kotlin.coroutines.cancellation.CancellationException
 
 /** What the bell listener is doing, for the STANDBY screen. */
@@ -44,7 +48,8 @@ interface SessionLog {
  *
  * [nowMs] is a monotonic clock for the machine's timers (ARMING's 10 s). Bell detections are dispatched as they
  * are decided; the detector itself only sees audio PTS. [openAudio] opens a fresh source each time STANDBY starts
- * listening, and [classifier] is the stage-1 model, loaded once and reused.
+ * listening, and [classifier] is the stage-1 model, loaded once and reused. Audible effects go to [beeps] when the
+ * current settings allow that cue (F15).
  */
 class SessionController(
     private val scope: CoroutineScope,
@@ -52,6 +57,7 @@ class SessionController(
     private val openAudio: () -> AudioSource,
     private val classifier: () -> BellClassifier,
     private val log: SessionLog,
+    private val beeps: BeepSink,
     private val audioDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : SessionHost {
     private val machine = SessionMachine(nowMs = nowMs())
@@ -62,6 +68,9 @@ class SessionController(
         private set
     private var timer: Job? = null
     private var listener: Job? = null
+
+    /** The alert-stream level for cues: the custom percent, or 100 (maximum) by default. */
+    val alertVolumePercent: Int @Synchronized get() = settings.alertVolumePercent ?: MAX_VOLUME_PERCENT
 
     override val state: StateFlow<State> = mutableState.asStateFlow()
     val bell: StateFlow<BellStatus> = mutableBell.asStateFlow()
@@ -85,19 +94,20 @@ class SessionController(
     @Synchronized
     override fun dispatch(event: Event, trigger: String) {
         val before = machine.state
-        machine.dispatch(event, nowMs())
-        afterChange(before, "$trigger:${event::class.simpleName}")
+        val effects = machine.dispatch(event, nowMs())
+        afterChange(before, effects, "$trigger:${event::class.simpleName}")
     }
 
     @Synchronized
     private fun tick() {
         val before = machine.state
-        machine.advanceTo(nowMs())
-        afterChange(before, "timer")
+        val effects = machine.advanceTo(nowMs())
+        afterChange(before, effects, "timer")
     }
 
-    /** Effects (brightness, beeps, recording) are F13, F15 and F17; this feature only drives the modes. */
-    private fun afterChange(before: State, trigger: String) {
+    /** Beeps (F15) are played here; brightness and recording effects are F13 and F17. */
+    private fun afterChange(before: State, effects: List<Effect>, trigger: String) {
+        effects.mapNotNull { it.cueOrNull() }.filter(settings::allows).forEach(beeps::play)
         val after = machine.state
         if (after != before) log.transition(before, after, trigger)
         // Sync the listener first, so anyone who sees the new state also sees the listener status that goes with it.
@@ -154,3 +164,12 @@ class SessionController(
         mutableBell.value = mutableBell.value.copy(listening = false)
     }
 }
+
+/** Whether the user's settings switch this cue on. */
+fun CaptureSettings.allows(cue: Cue): Boolean = when (cue) {
+    Cue.ARMED_BEEPS -> armedBeeps
+    Cue.CROSSING_BEEP -> crossingBeeps
+    Cue.STAND_DOWN_CHIME -> standDownChime
+}
+
+private const val MAX_VOLUME_PERCENT = 100
