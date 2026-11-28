@@ -100,6 +100,25 @@ class FixturesTest {
     }
 
     @Test
+    fun finishLineIsOptionalAndMustBeANormalisedSegment() {
+        val labels = Fixtures.race().labels
+        assertEquals(null, labels.finishLine)
+        val line = LineLabel(0.1f, 0.6f, 0.9f, 0.62f)
+        assertEquals(line, Labels.parse(labels.copy(finishLine = line).encode()).finishLine)
+        assertThrows { Labels.parse(labels.copy(finishLine = line.copy(x2 = 1.2f)).encode()) }
+        assertThrows { Labels.parse(labels.copy(finishLine = LineLabel(0.5f, 0.5f, 0.5f, 0.5f)).encode()) }
+    }
+
+    @Test
+    fun flagBoxesMustBeSortedAndInsideTheFrame() {
+        val labels = Fixtures.race().labels
+        val boxes = listOf(BoxLabel(3, 0.1f, 0.3f, 0.07f, 0.09f), BoxLabel(9, 0.2f, 0.3f, 0.07f, 0.09f))
+        assertEquals(boxes, Labels.parse(labels.copy(flagBoxes = boxes).encode()).flagBoxes)
+        assertThrows { Labels.parse(labels.copy(flagBoxes = boxes.reversed()).encode()) }
+        assertThrows { Labels.parse(labels.copy(flagBoxes = listOf(BoxLabel(1, 0.95f, 0.1f, 0.1f, 0.1f))).encode()) }
+    }
+
+    @Test
     fun writtenFixturesLoadBackThroughTheFileBackedSources() {
         val root = createTempDirectory().toFile()
         val race = Fixtures.race()
