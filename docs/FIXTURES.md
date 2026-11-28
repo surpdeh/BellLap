@@ -40,6 +40,8 @@ scripts/fixtures/fetch.sh            # into testing/fixtures/real/ (gitignored)
 | `flagIntervals` | `[startNs, endNs)` while the chequered flag is visibly waving; sorted, non-overlapping |
 | `crossings` | One entry per rider's **front wheel reaching the finish line**: `frame`, `ptsNs`, and `group` (riders in a bunch share a number) |
 | `distractors` | Sounds that must not trigger the bell (clapping, voice, freewheel) |
+| `flagBoxes` | Optional. Flag position on keyframes: `frame`, `x`, `y`, `width`, `height` as fractions of the frame. With them the harness scores whether the detector is *on the flag* (`flag.box_recall`, `flag.box_precision`, `flag.texture_recall`), not just whether it fired at the right time |
+| `finishLine` | Optional. `x1`, `y1`, `x2`, `y2` as fractions of the frame; the crossing detector watches this line instead of the synthetic scene's. It must be still in every frame (stabilise a panning clip first) |
 | `fps`, `framesDir`, `audioFile`, `sampleRate` | Where the media is and how to read it |
 
 Steps:
@@ -47,6 +49,9 @@ Steps:
 1. Extract frames, e.g. `ffmpeg -i clip.mp4 -vf format=gray <name>_frames/frame_%05d.png` and audio `ffmpeg -i clip.mp4 -ar 16000 -ac 1 <name>.wav`.
 2. Label by stepping frame by frame; label a crossing on the first frame the wheel touches the line.
    For a bell-only audio clip, `scripts/fixtures/clip-bell.sh INPUT START_S DURATION_S NAME [STRIKE_S ...]` cuts the clip to 16 kHz mono and writes `labels.json`. Run it without strike times first: it prints candidate onsets to check by ear.
+   For a video clip (flag or crossings), `scripts/fixtures/clip-video.py INPUT NAME [--start N --end N] [--stabilise ...] [--track-line ...] --spec SPEC.json` writes luma frames at the source resolution and `labels.json`. The spec holds the labels in source pixels and segment frame numbers (see the script's help). Run it without `--spec` first and label on the frames it writes. Specs hold only numbers, no media, so they are committed under `testing/fixtures/real-specs/`, each with the command that rebuilds its fixture.
+   - **Panning camera:** `--stabilise X0,Y0,X1,Y1` removes translation using a background band. When the phone moves as well as turns, the near road moves differently from the far background (parallax), so also pass `--track-line X1,Y1,X2,Y2`: the painted line is refitted on every frame and each frame is warped back onto it. Check the result on an overlay before labelling; keep segments to a few seconds.
+   - The harness writes `real-flag-trace.csv` (per frame: visible, box, texture box) beside `real-metrics.json`. Flag tunables can be swept without code changes: `./gradlew :testing:harness:replayReal -Pflag.analysisWidth=640 -Pflag.cornerContrast=40`.
 3. Validate: `Labels.parse` rejects unsorted or overlapping labels, and `replayReal` fails fast on a malformed file.
 4. Upload the directory to `golden/` (golden set, under about 2 GB) or another prefix for the larger set.
 
@@ -56,3 +61,20 @@ Steps:
 - Prefer footage framed side-on at the line; do not capture faces, plates or private property more than needed.
 - Never commit footage, bell recordings, or bug-report media to git, issues or PRs. Field-report media is added to the bucket only with the reporter's consent.
 - Keep a private note of who consented and when, next to the bucket, not in this repo. Remove a clip on request.
+
+## Adopted clips
+
+### `nc_agrade_*`: A-grade finish, handheld phone (issue #72)
+
+One 9.45 s clip (1280x720, 29.989 fps, 281 frames) of a club A-grade finish. The camera is on the right kerb a few metres past the line, looking up the road at the riders, and it pans and tilts by hand. It is not side-on. Specs: `testing/fixtures/real-specs/nc_agrade_{flag,cross1}.json`.
+
+| Fixture | Frames | Labels | Use |
+|---|---|---|---|
+| `nc_agrade_flag` | all 281 | `flagIntervals` [0, 216) and [244, 252); 27 `flagBoxes` keyframes | Flag robustness: small (about 80x70 px), backlit, low-contrast flag; handheld pan; building windows and kit in view |
+| `nc_agrade_cross1` | source 180-250 (2.4 s), line-stabilised | `finishLine` (painted span), 8 `crossings` | Head-on crossings at an oblique angle |
+
+Findings on first replay (report only, not gating):
+
+- **Flag:** the F16 defaults never see this flag (`iou` 0). Lowering `cornerContrast` to 40 gives `iou` 0.74, but `box_recall` stays at 0 to 0.11: the boxes are on building windows, a number plate and a jersey. The pan makes every tile "moving", so the motion gate does not separate the flag from background texture, and only the largest chequered group is reported. Interval IoU alone is not a valid flag metric on handheld footage; use the box metrics.
+- **Crossings:** the slit-scan detector times riders well (refined recall 0.875, max error 1 frame) but over-counts heavily (precision about 0.3). Head-on, a rider's front wheel, rear wheel and legs reach the strip one after another, and each looks like a new onset. Side-by-side riders are separated better than in a side-on view, because each sits at its own position along the line.
+- **Not usable:** source frames 251-280 (fast pan back with tilt and roll; the line cannot be tracked), and crossings on the unpainted part of the line left of the white edge line, which are not labelled.
