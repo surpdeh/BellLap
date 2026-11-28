@@ -13,7 +13,7 @@ fun interface FlagDetector {
     fun accept(frame: Frame): Boolean
 }
 
-/** Finish-crossing detector seam. Returns true when a rider crosses the line in [frame]. Real implementation: F18. */
+/** Finish-crossing detector seam. Returns true when a rider crosses the line in [frame]. Real implementation: F18 (`SlitScanCrossingDetector`). */
 fun interface CrossingDetector {
     fun accept(frame: Frame): Boolean
 }

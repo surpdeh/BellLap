@@ -1,6 +1,6 @@
 # Replay mode
 
-Status: **RP-1 and RP-2 implemented (F03); RP-3 and RP-4 implemented (F24)**. In-app replay of `race_synth` runs the real F14 bell cascade (YAMNet, or the spectral gate alone if the model is missing) and label-driven stub detectors for crossings until the F18 wiring (see PLAN). `:testing:harness:replay` replays the synthetic fixtures through the F14 bell cascade, the F16 flag detector and the F18 slit-scan crossing detector (live and refined passes, metrics `*.crossings.*` and `*.crossings_refined.*`). Bell metrics are per bell lap; see [bell-detection](./bell-detection.md).
+Status: **RP-1 and RP-2 implemented (F03); RP-3 and RP-4 implemented (F24)**. In-app replay of `race_synth` runs the real F14 bell cascade (YAMNet, or the spectral gate alone if the model is missing) and the real F18 crossing detector (label-driven bell stub is gone with F14). `:testing:harness:replay` replays the synthetic fixtures through the F14 bell cascade, the F16 flag detector and the F18 slit-scan crossing detector (live and refined passes, metrics `*.crossings.*` and `*.crossings_refined.*`). Bell metrics are per bell lap; see [bell-detection](./bell-detection.md).
 
 Replay runs the whole pipeline (state machine and detectors) on a chosen MP4 and WAV instead of the camera and microphone. It is the main way to verify on the emulator.
 
