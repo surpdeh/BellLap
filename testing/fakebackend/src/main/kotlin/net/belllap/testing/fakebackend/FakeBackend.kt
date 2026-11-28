@@ -47,7 +47,7 @@ class FakeBackend(private val nowMs: () -> Long = System::currentTimeMillis) : C
 
     private class Scripted(val status: Int, val body: String, val dropAfterBytes: Long?)
 
-    private val server = ServerSocket(0, BACKLOG, InetAddress.getLoopbackAddress())
+    private val server = ServerSocket(0, BACKLOG, InetAddress.getByAddress(byteArrayOf(LOOPBACK_V4, 0, 0, 1)))
     private val pool = Executors.newCachedThreadPool { r -> Thread(r, "fake-backend").apply { isDaemon = true } }
     private val reports = ConcurrentHashMap<String, ReportRecord>()
     private val scripts = Endpoint.entries.associateWith { ConcurrentLinkedQueue<Scripted>() }
@@ -291,6 +291,7 @@ class FakeBackend(private val nowMs: () -> Long = System::currentTimeMillis) : C
     companion object {
         const val VALID_TOKEN = "fake-app-check-token"
         private const val BACKLOG = 16
+        private const val LOOPBACK_V4: Byte = 127 // the URL says 127.0.0.1; getLoopbackAddress() can be ::1 on Android
         private const val SOCKET_TIMEOUT_MS = 30_000
         private const val DEFAULT_TTL_MS = 15 * 60 * 1000L
         private const val BUFFER = 64 * 1024
