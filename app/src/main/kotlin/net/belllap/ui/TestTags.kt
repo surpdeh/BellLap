@@ -28,4 +28,10 @@ object TestTags {
     const val BELL_NOW_BUTTON = "bell_now_button"
     const val BELL_STATUS = "bell_status"
     const val STOP_BUTTON = "stop_button"
+    const val ONBOARDING_SCREEN = "onboarding_screen"
+    const val ONBOARDING_CONTINUE = "onboarding_continue"
+    const val STEP_NOTIFICATIONS = "step_notifications"
+    const val STEP_CAMERA_MIC = "step_camera_mic"
+    const val STEP_BATTERY = "step_battery"
+    const val OEM_TIPS_BUTTON = "oem_tips_button"
 }

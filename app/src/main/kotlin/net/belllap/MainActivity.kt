@@ -1,15 +1,22 @@
 package net.belllap
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
 import android.provider.Settings
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -20,6 +27,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -28,10 +36,15 @@ import net.belllap.capture.PreviewSession
 import net.belllap.core.model.CameraCapabilities
 import net.belllap.core.model.CaptureSettings
 import net.belllap.core.model.PreviewMapping
+import net.belllap.core.service.SessionForegroundService
+import net.belllap.core.service.dimmedStandby
 import net.belllap.core.statemachine.State
 import net.belllap.debug.DebugEntry
 import net.belllap.settings.SettingsRepository
 import net.belllap.ui.CameraPreview
+import net.belllap.ui.OEM_TIPS_URL
+import net.belllap.ui.OnboardingScreen
+import net.belllap.ui.OnboardingStatus
 import net.belllap.ui.REQUIRED_PERMISSIONS
 import net.belllap.ui.SetupScreen
 import net.belllap.ui.StandbyScreen
@@ -49,6 +62,61 @@ class MainActivity : ComponentActivity() {
     private fun shouldShowRationale() =
         REQUIRED_PERMISSIONS.any { ActivityCompat.shouldShowRequestPermissionRationale(this, it) }
 
+    private fun notificationsGranted() = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+        ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
+        PackageManager.PERMISSION_GRANTED
+
+    private fun batteryExempt() = getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName)
+
+    /** Dimmed standby: screen kept on and brightness about 0.01; both restored when the session leaves STANDBY. */
+    private fun applyDimming(dimmed: Boolean) {
+        val attrs = window.attributes
+        attrs.screenBrightness = if (dimmed) DIMMED_BRIGHTNESS else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+        window.attributes = attrs
+        if (dimmed) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
+
+    @SuppressLint("BatteryLife")
+    @Composable
+    private fun Onboarding(granted: Boolean, requestCameraMic: () -> Unit, onDone: () -> Unit) {
+        var notifications by remember { mutableStateOf(notificationsGranted()) }
+        var battery by remember { mutableStateOf(batteryExempt()) }
+        val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+            notifications = notificationsGranted()
+        }
+        val batteryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            battery = batteryExempt()
+        }
+        OnboardingScreen(
+            status = OnboardingStatus(notifications, granted, battery),
+            onRequestNotifications = {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            },
+            onRequestCameraMic = requestCameraMic,
+            onRequestBatteryExemption = {
+                val uri = Uri.fromParts("package", packageName, null)
+                batteryLauncher.launch(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, uri))
+            },
+            onOpenOemTips = { startActivity(Intent(Intent.ACTION_VIEW, OEM_TIPS_URL.toUri())) },
+            onContinue = onDone,
+        )
+    }
+
+    /**
+     * First-run onboarding: shown from SETUP while the camera or microphone permission is missing, until the user
+     * continues. The notification and battery steps ride along as optional extras. Once the required permissions are
+     * granted the screen no longer gets in the way.
+     */
+    private fun showOnboarding(state: State, onboarded: Boolean, granted: Boolean): Boolean =
+        state == State.Setup && !onboarded && !granted
+
+    @Suppress("LongMethod")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val repo = SettingsRepository(settingsStore)
@@ -60,6 +128,8 @@ class MainActivity : ComponentActivity() {
                 val state by session.state.collectAsState()
                 val bell by session.bell.collectAsState()
                 LaunchedEffect(settings) { session.updateSettings(settings) }
+                LaunchedEffect(dimmedStandby(state)) { applyDimming(dimmedStandby(state)) }
+                var onboarded by rememberSaveable { mutableStateOf(false) }
                 var capabilities by remember { mutableStateOf<CameraCapabilities?>(null) }
                 var mapping by remember { mutableStateOf(PreviewMapping()) }
                 var detectMessage by remember { mutableStateOf<String?>(null) }
@@ -72,7 +142,9 @@ class MainActivity : ComponentActivity() {
                     granted = allGranted()
                     rationale = shouldShowRationale()
                 }
-                if (state != State.Setup && granted) {
+                if (showOnboarding(state, onboarded, granted)) {
+                    Onboarding(granted, { launcher.launch(REQUIRED_PERMISSIONS) }, { onboarded = true })
+                } else if (state != State.Setup && granted) {
                     StandbyScreen(state, bell, onBellNow = session::bellNow, onStop = session::stop)
                 } else {
                     Box {
@@ -88,7 +160,7 @@ class MainActivity : ComponentActivity() {
                             },
                             onSettingsChange = { new -> scope.launch { repo.update { new } } },
                             onRequestPermissions = { launcher.launch(REQUIRED_PERMISSIONS) },
-                            onStandby = session::standby,
+                            onStandby = { SessionForegroundService.startStandby(this@MainActivity) },
                             detectMessage = detectMessage,
                             onDetectLine = { scope.launch { detectMessage = detectAndStoreLine(repo) } },
                             onOpenSystemSettings = {
@@ -116,5 +188,9 @@ class MainActivity : ComponentActivity() {
         val found = frame?.let { withContext(Dispatchers.Default) { WhiteLineDetector.detect(it) } }
         found?.let { s -> repo.update { it.copy(finishLine = s.line) } }
         return detectMessageFor(frame != null, found)
+    }
+
+    private companion object {
+        const val DIMMED_BRIGHTNESS = 0.01f
     }
 }

@@ -16,6 +16,7 @@ import net.belllap.audio.bell.BellTrace
 import net.belllap.audio.source.AudioSource
 import net.belllap.core.model.BellSensitivity
 import net.belllap.core.model.CaptureSettings
+import net.belllap.core.service.SessionHost
 import net.belllap.core.statemachine.Event
 import net.belllap.core.statemachine.SessionMachine
 import net.belllap.core.statemachine.State
@@ -39,7 +40,7 @@ interface SessionLog {
 
 /**
  * Owns the [SessionMachine] while the activity is on screen and runs the bell cascade in STANDBY (F14).
- * F13 moves this into the foreground service; the API stays the same.
+ * The foreground service (F13) hosts it through [SessionHost], so it survives the activity.
  *
  * [nowMs] is a monotonic clock for the machine's timers (ARMING's 10 s). Bell detections are dispatched as they
  * are decided; the detector itself only sees audio PTS. [openAudio] opens a fresh source each time STANDBY starts
@@ -52,7 +53,7 @@ class SessionController(
     private val classifier: () -> BellClassifier,
     private val log: SessionLog,
     private val audioDispatcher: CoroutineDispatcher = Dispatchers.Default,
-) {
+) : SessionHost {
     private val machine = SessionMachine(nowMs = nowMs())
     private val mutableState = MutableStateFlow<State>(machine.state)
     private val mutableBell = MutableStateFlow(BellStatus())
@@ -60,7 +61,7 @@ class SessionController(
     private var timer: Job? = null
     private var listener: Job? = null
 
-    val state: StateFlow<State> = mutableState.asStateFlow()
+    override val state: StateFlow<State> = mutableState.asStateFlow()
     val bell: StateFlow<BellStatus> = mutableBell.asStateFlow()
 
     @Synchronized
@@ -80,7 +81,7 @@ class SessionController(
     fun stop() = dispatch(Event.Stop, "user")
 
     @Synchronized
-    fun dispatch(event: Event, trigger: String) {
+    override fun dispatch(event: Event, trigger: String) {
         val before = machine.state
         machine.dispatch(event, nowMs())
         afterChange(before, "$trigger:${event::class.simpleName}")
