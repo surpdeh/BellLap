@@ -1,0 +1,106 @@
+{
+ "schema": 1,
+ "context": {
+  "run_id": "46131094386",
+  "run_attempt": "1",
+  "sha": "2e324b6b6d432f058cde67cf6053283186d53c96",
+  "ref": "refs/pull/67/merge",
+  "event": "pull_request",
+  "runner_os": "ubuntu26",
+  "runner_image_version": "20261122.9.1",
+  "avd_cache_hit": "true",
+  "boot": "snapshot",
+  "cpus": 4
+ },
+ "phases_at_s": {
+  "emulator_ready": 0.0,
+  "apks_ready": 49.7,
+  "tests_start": 49.7,
+  "tests_end": 472.1,
+  "evidence_collected": 475.7
+ },
+ "phase_spans_s": {
+  "emulator_ready->apks_ready": 49.7,
+  "apks_ready->tests_start": 0.0,
+  "tests_start->tests_end": 422.4,
+  "tests_end->evidence_collected": 3.6
+ },
+ "tests_total_s": 390.3,
+ "tests": [
+  {
+   "module": "app",
+   "class": "net.belllap.ReplayRaceSynthTest",
+   "name": "journeyAtRealTimeShowsEveryMode",
+   "seconds": 198.919,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.ReplayRaceSynthTest",
+   "name": "replaysRaceSynthAndLogsTheEventSequence",
+   "seconds": 139.464,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.AcquisitionRecordingTest",
+   "name": "recordNowWritesAnMp4AndAValidSidecar",
+   "seconds": 22.709,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.LaunchTest",
+   "name": "launchesToSetupScreen",
+   "seconds": 10.453,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.StandbyBellNowTest",
+   "name": "bellNowArmsFromStandby",
+   "seconds": 9.984,
+   "outcome": "passed"
+  },
+  {
+   "module": "capture",
+   "class": "net.belllap.capture.PreRollEncoderTest",
+   "name": "preRollAndLiveVideoSpliceWithContinuousPts",
+   "seconds": 7.897,
+   "outcome": "passed"
+  },
+  {
+   "module": "audio:android",
+   "class": "net.belllap.audio.android.YamnetOnDeviceTest",
+   "name": "fullCascadeWithYamnetFindsBothBellLapsInTheFixture",
+   "seconds": 0.739,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.DeviceProbeTest",
+   "name": "probesTheDeviceAndSavesJson",
+   "seconds": 0.063,
+   "outcome": "passed"
+  },
+  {
+   "module": "audio:android",
+   "class": "net.belllap.audio.android.YamnetOnDeviceTest",
+   "name": "modelLoadsAndScoresSilenceLowAndAllClassesAsProbabilities",
+   "seconds": 0.029,
+   "outcome": "passed"
+  }
+ ],
+ "in_test_phases_s": {
+  "replaysRaceSynth": {
+   "prepare_wait": 11.989,
+   "replay": 114.148
+  },
+  "journey": {
+   "prepare": 3.857,
+   "prepare_wait": 0.027,
+   "replay": 68.813,
+   "total": 184.349
+  }
+ }
+}
