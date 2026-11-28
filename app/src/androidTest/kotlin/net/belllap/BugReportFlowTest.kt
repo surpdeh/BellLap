@@ -73,7 +73,9 @@ class BugReportFlowTest {
         composeRule.waitUntil(TIMEOUT_MS) { nodeExists(TestTags.STATUS_SCREEN) }
         // WorkManager also runs the queue once the network is up; process() is idempotent, so draining it here
         // keeps the test independent of that constraint.
-        assertEquals(ProcessResult.DONE, runBlocking { app.bugReports.queue.process() })
+        val result = runBlocking { app.bugReports.queue.process() }
+        val states = app.bugReports.reports.value.map { it.state }
+        assertEquals("states=$states requests=${backend.requests}", ProcessResult.DONE, result)
         composeRule.waitUntil(TIMEOUT_MS) { app.bugReports.reports.value.all { it.state is ReportState.Filed } }
         composeRule.waitForIdle()
         TestEvidence.screenshot("bugreport-3-status")
