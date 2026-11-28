@@ -15,6 +15,11 @@ import net.belllap.audio.android.AudioRecordPcmRecorder
 import net.belllap.audio.android.YamnetBellClassifier
 import net.belllap.audio.bell.BellClassifier
 import net.belllap.audio.source.MicAudioSource
+import net.belllap.bugreport.AppCheckTokenSource
+import net.belllap.bugreport.BugReports
+import net.belllap.bugreport.FirebaseAppCheckTokenSource
+import net.belllap.bugreport.NotConfiguredAppCheck
+import net.belllap.bugreport.ReportWorker
 import net.belllap.capture.CameraXAcquisitionSink
 import net.belllap.capture.DeviceProbe
 import net.belllap.capture.MediaCodecVideoDecoder
@@ -22,9 +27,9 @@ import net.belllap.core.log.AndroidInfo
 import net.belllap.core.log.EventLog
 import net.belllap.core.log.RollingFileTree
 import net.belllap.core.model.DeviceCapabilities
+import net.belllap.core.model.SavedAcquisition
 import net.belllap.core.model.ScreenLockSelfTest
 import net.belllap.core.model.SelfTestVerdict
-import net.belllap.core.model.SavedAcquisition
 import net.belllap.core.model.SidecarDevice
 import net.belllap.core.service.AlarmBeepPlayer
 import net.belllap.core.service.SessionHost
@@ -49,6 +54,11 @@ class BellLapApp : Application(), SessionHostProvider {
 
     /** Stage 1 of the bell cascade, loaded once (it maps a 4 MB model). Shared by the session and Replay. */
     val bellClassifier: BellClassifier by lazy { YamnetBellClassifier.loadOrFallback(this) }
+
+    val bugReports: BugReports by lazy { BugReports(this, appCheck()) }
+
+    private fun appCheck(): AppCheckTokenSource = BuildConfig.FIREBASE_API_KEY.takeIf { it.isNotEmpty() }
+        ?.let { FirebaseAppCheckTokenSource(this, it) } ?: NotConfiguredAppCheck
 
     /** Whether MainActivity is started (on screen). The headless camera (F33) takes over while it is not. */
     val activityVisible = MutableStateFlow(false)
@@ -125,6 +135,9 @@ class BellLapApp : Application(), SessionHostProvider {
         val prefs = getSharedPreferences("eventlog", MODE_PRIVATE)
         val newest = AndroidInfo.recordExitInfo(this, eventLog, prefs.getLong(KEY_LAST_EXIT, 0L))
         prefs.edit { putLong(KEY_LAST_EXIT, newest) }
+        MainScope().launch(Dispatchers.IO) {
+            if (bugReports.configured && bugReports.queue.hasWork) ReportWorker.schedule(this@BellLapApp)
+        }
         // The JSON sits beside the event logs, so a bug report bundling the logs directory includes it.
         MainScope().launch(Dispatchers.IO) {
             runCatching { DeviceProbe.writeJson(this@BellLapApp, logsDir) }

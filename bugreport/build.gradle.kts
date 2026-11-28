@@ -1,7 +1,15 @@
 plugins {
-    alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
 }
 
-android {
-    namespace = "net.belllap.bugreport"
+dependencies {
+    api(project(":audio:source"))
+    api(project(":core:model"))
+    api(libs.kotlinx.coroutines.core)
+    api(libs.kotlinx.serialization.json)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(project(":testing:fakebackend"))
 }

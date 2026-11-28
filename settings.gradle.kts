@@ -36,6 +36,7 @@ include(
     ":capture",
     ":review",
     ":bugreport",
+    ":testing:fakebackend",
     ":testing:fixtures",
     ":testing:harness",
 )
