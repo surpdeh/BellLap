@@ -1,0 +1,471 @@
+{
+    "cameras": [
+        {
+            "id": "0",
+            "facing": "BACK",
+            "hardwareLevel": "LEVEL_3",
+            "fpsRanges": [
+                {
+                    "min": 15,
+                    "max": 15
+                },
+                {
+                    "min": 5,
+                    "max": 30
+                },
+                {
+                    "min": 15,
+                    "max": 30
+                },
+                {
+                    "min": 30,
+                    "max": 30
+                }
+            ],
+            "useCases": [
+                {
+                    "useCase": "PREVIEW",
+                    "sizes": [
+                        {
+                            "width": 160,
+                            "height": 120,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 176,
+                            "height": 144,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 320,
+                            "height": 240,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 640,
+                            "height": 480,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1024,
+                            "height": 768,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1280,
+                            "height": 720,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1856,
+                            "height": 1392,
+                            "maxFps": 30
+                        }
+                    ]
+                },
+                {
+                    "useCase": "ANALYSIS",
+                    "sizes": [
+                        {
+                            "width": 160,
+                            "height": 120,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 176,
+                            "height": 144,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 320,
+                            "height": 240,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 640,
+                            "height": 480,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1024,
+                            "height": 768,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1280,
+                            "height": 720,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1856,
+                            "height": 1392,
+                            "maxFps": 30
+                        }
+                    ]
+                },
+                {
+                    "useCase": "VIDEO",
+                    "sizes": [
+                        {
+                            "width": 160,
+                            "height": 120,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 176,
+                            "height": 144,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 320,
+                            "height": 240,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 640,
+                            "height": 480,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1024,
+                            "height": 768,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1280,
+                            "height": 720,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1856,
+                            "height": 1392,
+                            "maxFps": 30
+                        }
+                    ]
+                }
+            ],
+            "highSpeed": []
+        },
+        {
+            "id": "1",
+            "facing": "FRONT",
+            "hardwareLevel": "FULL",
+            "fpsRanges": [
+                {
+                    "min": 15,
+                    "max": 15
+                },
+                {
+                    "min": 7,
+                    "max": 30
+                },
+                {
+                    "min": 15,
+                    "max": 30
+                },
+                {
+                    "min": 30,
+                    "max": 30
+                }
+            ],
+            "useCases": [
+                {
+                    "useCase": "PREVIEW",
+                    "sizes": [
+                        {
+                            "width": 176,
+                            "height": 144,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 320,
+                            "height": 240,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 352,
+                            "height": 288,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 640,
+                            "height": 360,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 640,
+                            "height": 480,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 720,
+                            "height": 480,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 800,
+                            "height": 600,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1024,
+                            "height": 768,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1280,
+                            "height": 720,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1280,
+                            "height": 960,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1440,
+                            "height": 1080,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1920,
+                            "height": 960,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1600,
+                            "height": 1200,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1920,
+                            "height": 1080,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1920,
+                            "height": 1440,
+                            "maxFps": 30
+                        }
+                    ]
+                },
+                {
+                    "useCase": "ANALYSIS",
+                    "sizes": [
+                        {
+                            "width": 176,
+                            "height": 144,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 320,
+                            "height": 240,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 352,
+                            "height": 288,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 640,
+                            "height": 360,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 640,
+                            "height": 480,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 720,
+                            "height": 480,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 800,
+                            "height": 600,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1024,
+                            "height": 768,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1280,
+                            "height": 720,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1280,
+                            "height": 960,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1440,
+                            "height": 1080,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1920,
+                            "height": 960,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1600,
+                            "height": 1200,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1920,
+                            "height": 1080,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1920,
+                            "height": 1440,
+                            "maxFps": 30
+                        }
+                    ]
+                },
+                {
+                    "useCase": "VIDEO",
+                    "sizes": [
+                        {
+                            "width": 176,
+                            "height": 144,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 320,
+                            "height": 240,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 352,
+                            "height": 288,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 640,
+                            "height": 360,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 640,
+                            "height": 480,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 720,
+                            "height": 480,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 800,
+                            "height": 600,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1024,
+                            "height": 768,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1280,
+                            "height": 720,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1280,
+                            "height": 960,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1440,
+                            "height": 1080,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1920,
+                            "height": 960,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1600,
+                            "height": 1200,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1920,
+                            "height": 1080,
+                            "maxFps": 30
+                        },
+                        {
+                            "width": 1920,
+                            "height": 1440,
+                            "maxFps": 30
+                        }
+                    ]
+                }
+            ],
+            "highSpeed": []
+        }
+    ],
+    "audioSources": [
+        {
+            "name": "MIC",
+            "supported": true
+        },
+        {
+            "name": "UNPROCESSED",
+            "supported": false
+        },
+        {
+            "name": "CAMCORDER",
+            "supported": true
+        },
+        {
+            "name": "VOICE_RECOGNITION",
+            "supported": true
+        },
+        {
+            "name": "VOICE_COMMUNICATION",
+            "supported": true
+        }
+    ],
+    "codecs": [
+        {
+            "mime": "audio/mp4a-latm",
+            "encoder": true,
+            "name": "OMX.google.aac.encoder",
+            "hardware": false
+        },
+        {
+            "mime": "audio/mp4a-latm",
+            "encoder": true,
+            "name": "c2.android.aac.encoder",
+            "hardware": false
+        },
+        {
+            "mime": "video/avc",
+            "encoder": true,
+            "name": "OMX.google.h264.encoder",
+            "hardware": false
+        },
+        {
+            "mime": "video/avc",
+            "encoder": true,
+            "name": "c2.android.avc.encoder",
+            "hardware": false
+        },
+        {
+            "mime": "video/hevc",
+            "encoder": true,
+            "name": "c2.android.hevc.encoder",
+            "hardware": false
+        }
+    ],
+    "schema": 1
+}
