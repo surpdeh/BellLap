@@ -16,6 +16,8 @@ object TestTags {
     const val TOGGLE_BEEPS = "toggle_beeps"
     const val TOGGLE_ARMED_BEEPS = "toggle_armed_beeps"
     const val TOGGLE_STAND_DOWN_CHIME = "toggle_stand_down_chime"
+    const val TOGGLE_SCREEN_LOCK = "toggle_screen_lock"
+    const val SELF_TEST_BUTTON = "self_test_button"
     const val TOGGLE_VOLUME = "toggle_volume"
     const val FLAG_TIMEOUT_SLIDER = "flag_timeout_slider"
     const val LINE_BUTTON = "line_button"

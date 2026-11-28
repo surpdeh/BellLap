@@ -22,6 +22,7 @@ import net.belllap.core.model.CrossingSource
 import net.belllap.core.model.FinishLine
 import net.belllap.core.model.FlagIntervalTracker
 import net.belllap.core.model.RecordingUnavailableException
+import net.belllap.core.model.SelfTestVerdict
 import net.belllap.core.model.Sidecar
 import net.belllap.core.model.SidecarCrossing
 import net.belllap.core.model.SidecarDevice
@@ -84,6 +85,10 @@ class SessionController(
     private val appVersion: String,
     private val eventLabel: () -> String,
     private val audioDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    /** Whether the screen is on and interactive; the F33 self-test needs it off when the simulated bell fires. */
+    private val screenOn: () -> Boolean = { true },
+    /** Called with each finished self-test run, so the app can persist the pass for this device. */
+    private val onSelfTestVerdict: (SelfTestVerdict) -> Unit = {},
 ) : SessionHost {
     private val machine = SessionMachine(nowMs = nowMs())
     private val mutableState = MutableStateFlow<State>(machine.state)
@@ -95,6 +100,8 @@ class SessionController(
     private var timer: Job? = null
     private var listener: Job? = null
     private var active: ActiveRecording? = null
+    private var selfTestJob: Job? = null
+    private val mutableSelfTest = MutableStateFlow<SelfTestStatus>(SelfTestStatus.Idle)
     private var crossings: SlitScanCrossingDetector? = null
     private var crossingLine: FinishLine? = null
     private val mutableNotice = MutableStateFlow<String?>(null)
@@ -103,6 +110,13 @@ class SessionController(
     val alertVolumePercent: Int @Synchronized get() = settings.alertVolumePercent ?: MAX_VOLUME_PERCENT
 
     override val state: StateFlow<State> = mutableState.asStateFlow()
+
+    /** The F33 locked-screen self-test, for the settings screen. */
+    val selfTest: StateFlow<SelfTestStatus> = mutableSelfTest.asStateFlow()
+
+    /** True while a self-test runs, which forces the headless camera path (the phone is meant to be locked). */
+    val selfTestActive: Boolean
+        get() = mutableSelfTest.value.let { it is SelfTestStatus.Countdown || it is SelfTestStatus.Running }
     val bell: StateFlow<BellStatus> = mutableBell.asStateFlow()
 
     /** The latest recording problem for the user (storage guard, camera), or null. Cleared when a recording starts. */
@@ -115,6 +129,34 @@ class SessionController(
         if (restart) {
             stopListening()
             syncListener()
+        }
+    }
+
+    /** Starts the self-test: lock the phone during the countdown. Ignored while one is running or a session is. */
+    @Synchronized
+    fun runSelfTest() {
+        if (selfTestActive || machine.state != State.Setup) return
+        mutableSelfTest.value = SelfTestStatus.Countdown(ScreenLockSelfTestRunner.LOCK_COUNTDOWN_S)
+        val host = object : SelfTestHost {
+            override val state: StateFlow<State> = this@SessionController.state
+            override val notice: StateFlow<String?> = this@SessionController.notice
+
+            override fun dispatch(event: Event, trigger: String) {
+                this@SessionController.dispatch(event, trigger)
+            }
+
+            override fun framePtsUs(): Long? = sink.latestFramePtsUs()
+
+            override fun screenOn(): Boolean = this@SessionController.screenOn()
+        }
+        selfTestJob = scope.launch {
+            try {
+                val verdict = ScreenLockSelfTestRunner(host, { mutableSelfTest.value = it }).run()
+                onSelfTestVerdict(verdict)
+            } catch (e: CancellationException) {
+                mutableSelfTest.value = SelfTestStatus.Idle
+                throw e
+            }
         }
     }
 

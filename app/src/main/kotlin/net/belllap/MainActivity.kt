@@ -34,6 +34,7 @@ import androidx.core.net.toUri
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.belllap.capture.CameraUnavailableException
@@ -61,7 +62,7 @@ import net.belllap.ui.permissionUi
 import net.belllap.vision.finishline.WhiteLineDetector
 import timber.log.Timber
 
-private val android.content.Context.settingsStore by preferencesDataStore("capture_settings")
+internal val android.content.Context.settingsStore by preferencesDataStore("capture_settings")
 
 /**
  * First-run onboarding: shown from SETUP while the camera or microphone permission is missing, until the user
@@ -93,11 +94,11 @@ class MainActivity : ComponentActivity() {
     private fun batteryExempt() = getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName)
 
     /** Dimmed standby: screen kept on and brightness about 0.01; both restored when the session leaves STANDBY. */
-    private fun applyDimming(dimmed: Boolean) {
+    private fun applyDimming(dimmed: Boolean, keepOn: Boolean) {
         val attrs = window.attributes
         attrs.screenBrightness = if (dimmed) DIMMED_BRIGHTNESS else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
         window.attributes = attrs
-        if (dimmed) {
+        if (dimmed && keepOn) {
             window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         } else {
             window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -120,12 +121,30 @@ class MainActivity : ComponentActivity() {
     private fun applyKeepOn(keepOn: Boolean) {
         if (keepOn) {
             window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        } else if (!dimmedStandby(session().state.value)) {
+        } else if (!(dimmedStandby(session().state.value) && !screenLockActive())) {
             window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
     }
 
     private fun session() = (application as BellLapApp).session
+
+    private fun screenLockActive() = session().settings.screenLockActive((application as BellLapApp).deviceId)
+
+    /** Lets the activity show over the keyguard and light the screen when it comes to the front (F33, best effort). */
+    private fun applyWake(enabled: Boolean) {
+        setShowWhenLocked(enabled)
+        setTurnScreenOn(enabled)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        (application as BellLapApp).activityVisible.value = true
+    }
+
+    override fun onStop() {
+        (application as BellLapApp).activityVisible.value = false
+        super.onStop()
+    }
 
     @SuppressLint("BatteryLife")
     @Composable
@@ -159,7 +178,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val repo = SettingsRepository(settingsStore)
-        val session = (application as BellLapApp).session
+        val app = application as BellLapApp
+        val session = app.session
         setContent {
             MaterialTheme {
                 val scope = rememberCoroutineScope()
@@ -169,7 +189,10 @@ class MainActivity : ComponentActivity() {
                 val notice by session.notice.collectAsState()
                 LaunchedEffect(settings) { session.updateSettings(settings) }
                 val device by (application as BellLapApp).deviceCapabilities.collectAsState()
-                LaunchedEffect(dimmedStandby(state)) { applyDimming(dimmedStandby(state)) }
+                val lockActive = settings.screenLockActive(app.deviceId)
+                val selfTest by session.selfTest.collectAsState()
+                LaunchedEffect(dimmedStandby(state), lockActive) { applyDimming(dimmedStandby(state), !lockActive) }
+                LaunchedEffect(lockActive) { applyWake(lockActive) }
                 LaunchedEffect(cameraNeeded(state)) { applyKeepOn(cameraNeeded(state)) }
                 var onboarded by rememberSaveable { mutableStateOf(false) }
                 var capabilities by remember { mutableStateOf<CameraCapabilities?>(null) }
@@ -187,7 +210,7 @@ class MainActivity : ComponentActivity() {
                 if (showOnboarding(state, onboarded, granted)) {
                     Onboarding(granted, { launcher.launch(REQUIRED_PERMISSIONS) }, { onboarded = true })
                 } else if (state != State.Setup && granted) {
-                    if (cameraNeeded(state)) HiddenCamera(settings)
+                    if (cameraNeeded(state)) HiddenCamera(settings, app.activityVisible)
                     StandbyScreen(
                         state,
                         bell,
@@ -212,6 +235,12 @@ class MainActivity : ComponentActivity() {
                             onSettingsChange = { new -> scope.launch { repo.update { new } } },
                             onRequestPermissions = { launcher.launch(REQUIRED_PERMISSIONS) },
                             onStandby = { SessionForegroundService.startStandby(this@MainActivity) },
+                            screenLockAvailable = settings.screenLockAvailable(app.deviceId),
+                            selfTest = selfTest,
+                            onRunSelfTest = {
+                                SessionForegroundService.startIdle(this@MainActivity)
+                                session.runSelfTest()
+                            },
                             detectMessage = detectMessage,
                             onDetectLine = { scope.launch { detectMessage = detectAndStoreLine(repo) } },
                             onOpenSystemSettings = ::openAppSettings,
@@ -232,7 +261,7 @@ class MainActivity : ComponentActivity() {
 
     /** Keeps the camera bound for recording while the black screen shows, so nothing bright appears (F17). */
     @Composable
-    private fun HiddenCamera(settings: CaptureSettings) {
+    private fun HiddenCamera(settings: CaptureSettings, activityVisible: StateFlow<Boolean>) {
         val context = LocalContext.current
         val owner = LocalLifecycleOwner.current
         val session = (application as BellLapApp).session
@@ -240,7 +269,10 @@ class MainActivity : ComponentActivity() {
             PreviewSession.frameListener = session::onFrame
             onDispose { PreviewSession.frameListener = null }
         }
-        LaunchedEffect(settings.facing, settings.resolution, settings.fps) {
+        val visible by activityVisible.collectAsState()
+        LaunchedEffect(settings.facing, settings.resolution, settings.fps, visible) {
+            // While the activity is stopped the headless camera (F33) owns the bind; unbinding here would drop it.
+            if (!visible) return@LaunchedEffect
             try {
                 PreviewSession.bind(context, owner, settings) { PreviewSession.discardSurface(context, it) }
             } catch (e: CameraUnavailableException) {

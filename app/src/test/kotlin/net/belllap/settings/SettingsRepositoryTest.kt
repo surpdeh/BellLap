@@ -48,6 +48,8 @@ class SettingsRepositoryTest {
             volumeUpAction = VolumeKeyAction.ARM,
             volumeDownAction = VolumeKeyAction.RECORD,
             finishLine = FinishLine(NormPoint(0.4f, 0.1f), NormPoint(0.6f, 0.9f)),
+            allowScreenLock = true,
+            screenLockTestedDevice = "Google|Pixel 8|36|fp",
         )
         val first = store("a.preferences_pb")
         SettingsRepository(first).update { changed }

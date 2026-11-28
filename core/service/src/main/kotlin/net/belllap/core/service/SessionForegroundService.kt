@@ -146,6 +146,7 @@ class SessionForegroundService : Service() {
         )
 
     companion object {
+        const val ACTION_IDLE = "net.belllap.action.IDLE"
         const val ACTION_STANDBY = "net.belllap.action.STANDBY"
         const val ACTION_BELL_NOW = "net.belllap.action.BELL_NOW"
         const val ACTION_RECORD_NOW = "net.belllap.action.RECORD_NOW"
@@ -170,6 +171,9 @@ class SessionForegroundService : Service() {
 
         /** Starts the service and enters STANDBY. Call from a visible activity with mic and camera granted. */
         fun startStandby(context: Context) = send(context, ACTION_STANDBY)
+
+        /** Starts the service in the foreground without entering STANDBY, for the F33 self-test. */
+        fun startIdle(context: Context) = send(context, ACTION_IDLE)
 
         fun bellNow(context: Context) = send(context, ACTION_BELL_NOW)
 
