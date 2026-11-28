@@ -11,6 +11,7 @@ import net.belllap.testing.fixtures.EvidenceImages
 import net.belllap.testing.fixtures.FixtureWriter
 import net.belllap.testing.fixtures.Fixtures
 import net.belllap.testing.fixtures.Labels
+import net.belllap.vision.flag.FlagConfig
 import java.io.File
 import javax.imageio.ImageIO
 import kotlin.system.exitProcess
@@ -45,9 +46,14 @@ fun replayRealMain(args: Array<String>) {
         return
     }
     val stage1 = Stage1.fromSystemProperties()
-    val metrics = ReplayRunner.run(root, names, stage1)
-    println("bell stage 1: ${stage1.label}")
+    val flagConfig = flagConfigFromSystemProperties()
+    val metrics = ReplayRunner.run(root, names, stage1, flagConfig)
+    println("bell stage 1: ${stage1.label}; flag config: $flagConfig")
     if (stage1 is Stage1.Dump) return
+    File(outDir, "real-flag-trace.csv").writeText(
+        (listOf("fixture,frame,pts_ms,visible,box,texture_box") + ReplayRunner.flagTrace)
+            .joinToString("\n", postfix = "\n"),
+    )
     File(outDir, "real-bell-trace.csv").writeText(
         (listOf("fixture,event,pts_ms,detail") + ReplayRunner.bellTrace).joinToString("\n", postfix = "\n"),
     )
@@ -171,3 +177,17 @@ private fun writeCrossingStrip(outDir: File, fixturesDir: File) {
 
 private const val FLAG_HIT_S = 6.0
 private const val BANNER_S = 6.0
+
+/**
+ * Overrides of the F16 detector defaults for a real-footage sweep, e.g.
+ * `./gradlew :testing:harness:replayReal -Pflag.analysisWidth=640 -Pflag.cornerContrast=40`. Report only: the
+ * shipped defaults stay in [FlagConfig].
+ */
+fun flagConfigFromSystemProperties(): FlagConfig {
+    val d = FlagConfig()
+    fun int(key: String) = System.getProperty("belllap.flag.$key")?.takeIf { it.isNotBlank() }?.toInt()
+    return d.copy(
+        analysisWidth = int("analysisWidth") ?: d.analysisWidth,
+        cornerContrast = int("cornerContrast") ?: d.cornerContrast,
+    )
+}

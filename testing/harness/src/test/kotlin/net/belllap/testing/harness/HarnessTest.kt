@@ -123,4 +123,43 @@ class HarnessTest {
         val text = java.io.File(out, "real-metrics.json").readText()
         assertTrue(text.contains("\"ran\"") && text.contains("bell_snr20.bell.recall"))
     }
+
+    @Test
+    fun flagBoxesScoreLocalisationAndTheTraceHasOneRowPerFrame() {
+        val root = java.nio.file.Files.createTempDirectory("realflag").toFile()
+        val fixture = Fixtures.flag()
+        net.belllap.testing.fixtures.FixtureWriter.write(root, listOf(fixture))
+        val name = fixture.labels.name
+        val file = java.io.File(root, "$name/labels.json")
+        val labels = net.belllap.testing.fixtures.Labels.load(file)
+        val fps = requireNotNull(labels.fps)
+        val visibleFrame = Math.round((labels.flagIntervals.first().endNs - 1) / 1e9 * fps).toInt() - 1
+        val boxes = listOf(
+            net.belllap.testing.fixtures.BoxLabel(visibleFrame - 1, 0.01f, 0.01f, 0.01f, 0.01f), // nowhere near
+            net.belllap.testing.fixtures.BoxLabel(visibleFrame, 0f, 0f, 1f, 1f), // the whole frame
+        )
+        file.writeText(labels.copy(flagBoxes = boxes).encode())
+        val metrics = ReplayRunner.run(root, listOf(name))
+        assertEquals(0.5, metrics.getValue("$name.flag.box_recall"), 1e-9)
+        assertEquals(0.5, metrics.getValue("$name.flag.box_precision"), 1e-9)
+        assertEquals(fixture.frames!!.size, ReplayRunner.flagTrace.size)
+    }
+
+    @Test
+    fun aLabelledFinishLineReplacesTheSyntheticOne() {
+        val root = java.nio.file.Files.createTempDirectory("realline").toFile()
+        val fixture = Fixtures.crossings()
+        net.belllap.testing.fixtures.FixtureWriter.write(root, listOf(fixture))
+        val name = fixture.labels.name
+        val file = java.io.File(root, "$name/labels.json")
+        val labels = net.belllap.testing.fixtures.Labels.load(file)
+        val synth = CrossingRun.SYNTH_LINE
+        val same = net.belllap.testing.fixtures.LineLabel(synth.start.x, synth.start.y, synth.end.x, synth.end.y)
+        file.writeText(labels.copy(finishLine = same).encode())
+        val onLine = ReplayRunner.run(root, listOf(name))
+        assertEquals(1.0, onLine.getValue("$name.crossings.recall"), 1e-9)
+        // A line along the top edge of the frame, away from the riders, sees none of them.
+        file.writeText(labels.copy(finishLine = net.belllap.testing.fixtures.LineLabel(0f, 0f, 1f, 0f)).encode())
+        assertEquals(0.0, ReplayRunner.run(root, listOf(name)).getValue("$name.crossings.recall"), 1e-9)
+    }
 }

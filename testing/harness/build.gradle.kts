@@ -43,7 +43,7 @@ tasks.register<JavaExec>("replayReal") {
     outputs.upToDateWhen { false } // fixtures live outside the build; always re-run
     outputs.dir(reportsDir)
     args(reportsDir.get().asFile.absolutePath, root.absolutePath)
-    listOf("bell.dump", "bell.scores").forEach { key ->
+    listOf("bell.dump", "bell.scores", "flag.analysisWidth", "flag.cornerContrast").forEach { key ->
         providers.gradleProperty(key).orNull?.let { systemProperty("belllap.$key", it) }
     }
 }

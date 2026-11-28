@@ -3,9 +3,15 @@ package net.belllap.testing.harness
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import net.belllap.audio.source.WavFileAudioSource
+import net.belllap.core.model.FinishLine
+import net.belllap.core.model.NormPoint
+import net.belllap.testing.fixtures.BoxLabel
 import net.belllap.testing.fixtures.Labels
 import net.belllap.vision.core.Frame
 import net.belllap.vision.core.ImageSequenceFrameSource
+import net.belllap.vision.flag.FlagBox
+import net.belllap.vision.flag.FlagConfig
+import net.belllap.vision.flag.FlagResult
 import java.io.File
 
 /** Replays fixtures from disk (through the file-backed sources) into the detectors and computes metrics. */
@@ -17,8 +23,17 @@ object ReplayRunner {
     /** Every bell stage event of the last [run], as `fixture,kind,pts_ms,detail` CSV rows. */
     val bellTrace = ArrayList<String>()
 
-    fun run(fixturesRoot: File, names: List<String>, stage1: Stage1 = Stage1.Off): Map<String, Double> {
+    /** One row per frame of every flag fixture of the last [run]: `fixture,frame,pts_ms,visible,box,texture_box`. */
+    val flagTrace = ArrayList<String>()
+
+    fun run(
+        fixturesRoot: File,
+        names: List<String>,
+        stage1: Stage1 = Stage1.Off,
+        flagConfig: FlagConfig = FlagConfig(),
+    ): Map<String, Double> {
         val out = sortedMapOf<String, Double>()
+        flagTrace.clear()
         for (name in names) {
             val dir = File(fixturesRoot, name)
             val labels = Labels.load(File(dir, Labels.FILE_NAME))
@@ -27,9 +42,9 @@ object ReplayRunner {
             if (labels.framesDir != null) {
                 val frames = loadFrames(dir, labels)
                 if (labels.flagIntervals.isNotEmpty() || labels.distractors.any { it.kind == Labels.BANNER_KIND }) {
-                    flag(frames, labels, prefix, out)
+                    flag(frames, labels, prefix, out, flagConfig)
                 }
-                if (labels.crossings.isNotEmpty()) crossings(frames, labels, prefix, out)
+                if (labels.crossings.isNotEmpty()) crossings(frames, labels, prefix, out, line(labels))
             }
         }
         return out
@@ -71,8 +86,17 @@ object ReplayRunner {
         out["$prefix.bell.matched"] = r.matched.toDouble()
     }
 
-    private fun flag(frames: List<Frame>, labels: Labels, prefix: String, out: MutableMap<String, Double>) {
-        val run = FlagRun.over(frames)
+    private fun flag(
+        frames: List<Frame>,
+        labels: Labels,
+        prefix: String,
+        out: MutableMap<String, Double>,
+        config: FlagConfig,
+    ) {
+        val run = FlagRun.over(frames, config)
+        run.results.forEachIndexed { i, r ->
+            flagTrace += "$prefix,$i,${frames[i].ptsNs / NS_PER_MS},${r.visible},${r.box.csv()},${r.textureBox.csv()}"
+        }
         val found = run.intervals
         val truth = labels.flagIntervals.map { it.startNs until it.endNs }
         out["$prefix.flag.iou"] = Metrics.intervalIou(truth, found)
@@ -81,6 +105,7 @@ object ReplayRunner {
                 (t, f) ->
             Math.abs(f.first - t.first) / NS_PER_MS
         } ?: 0.0
+        if (labels.flagBoxes.isNotEmpty()) flagBoxes(frames, run, labels, prefix, out)
         if (truth.isEmpty()) {
             // A distractor-only fixture: any visible frame is a false positive. (With a real flag, hysteresis lag
             // at the edges is not one, and shows in iou and max_start_error_ms instead.)
@@ -89,8 +114,50 @@ object ReplayRunner {
         }
     }
 
-    private fun crossings(frames: List<Frame>, labels: Labels, prefix: String, out: MutableMap<String, Double>) {
-        val run = CrossingRun.over(frames)
+    /**
+     * Localisation on the labelled keyframes. `box_recall`: share of keyframes where the reported flag box overlaps
+     * the label. `box_precision`: of the keyframes with a reported box, the share that overlaps. `texture_recall`:
+     * as `box_recall` for the texture-only box, so a miss can be blamed on texture or on motion.
+     */
+    private fun flagBoxes(
+        frames: List<Frame>,
+        run: FlagRun,
+        labels: Labels,
+        prefix: String,
+        out: MutableMap<String, Double>,
+    ) {
+        val keys = labels.flagBoxes.filter { it.frame < frames.size }
+        fun hits(pick: (FlagResult) -> FlagBox?) = keys.count { k ->
+            val f = frames[k.frame]
+            pick(run.results[k.frame])?.overlaps(k, f.width, f.height) == true
+        }
+        val reported = keys.count { run.results[it.frame].box != null }
+        out["$prefix.flag.box_recall"] = hits { it.box }.toDouble() / keys.size
+        out["$prefix.flag.box_precision"] = if (reported == 0) 0.0 else hits { it.box }.toDouble() / reported
+        out["$prefix.flag.texture_recall"] = hits { it.textureBox }.toDouble() / keys.size
+    }
+
+    private fun FlagBox.overlaps(k: BoxLabel, w: Int, h: Int): Boolean {
+        val kx0 = k.x * w
+        val ky0 = k.y * h
+        return x < kx0 + k.width * w && kx0 < x + width && y < ky0 + k.height * h && ky0 < y + height
+    }
+
+    /** The fixture's labelled finish line; synthetic fixtures carry none and use the scene's line. */
+    private fun line(labels: Labels): FinishLine = labels.finishLine?.let {
+        FinishLine(NormPoint(it.x1, it.y1), NormPoint(it.x2, it.y2))
+    } ?: CrossingRun.SYNTH_LINE
+
+    private fun FlagBox?.csv(): String = this?.let { "${it.x} ${it.y} ${it.width} ${it.height}" }.orEmpty()
+
+    private fun crossings(
+        frames: List<Frame>,
+        labels: Labels,
+        prefix: String,
+        out: MutableMap<String, Double>,
+        line: FinishLine,
+    ) {
+        val run = CrossingRun.over(frames, line)
         val frameNs = NS_PER_S / requireNotNull(labels.fps)
         crossingMetrics("$prefix.crossings", labels, run.live.map { it.ptsNs }, frameNs, out)
         crossingMetrics("$prefix.crossings_refined", labels, run.refined.map { it.ptsNs }, frameNs, out)
