@@ -63,7 +63,8 @@ class MediaVideoTrimmer : VideoTrimmer {
             info.size = extractor.readSampleData(buffer, 0)
             if (info.size < 0) break
             info.presentationTimeUs = extractor.sampleTime - firstUs
-            info.flags = extractor.sampleFlags
+            val keyframe = extractor.sampleFlags and MediaExtractor.SAMPLE_FLAG_SYNC != 0
+            info.flags = if (keyframe) MediaCodec.BUFFER_FLAG_KEY_FRAME else 0
             muxer.writeSampleData(track, buffer, info)
             lastUs = extractor.sampleTime
             extractor.advance()
