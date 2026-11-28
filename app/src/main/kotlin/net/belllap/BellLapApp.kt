@@ -14,7 +14,9 @@ import net.belllap.audio.android.AudioRecordPcmRecorder
 import net.belllap.audio.android.YamnetBellClassifier
 import net.belllap.audio.bell.BellClassifier
 import net.belllap.audio.source.MicAudioSource
+import net.belllap.bugreport.AppCheckTokenSource
 import net.belllap.bugreport.BugReports
+import net.belllap.bugreport.FirebaseAppCheckTokenSource
 import net.belllap.bugreport.NotConfiguredAppCheck
 import net.belllap.bugreport.ReportWorker
 import net.belllap.capture.CameraXAcquisitionSink
@@ -45,7 +47,10 @@ class BellLapApp : Application(), SessionHostProvider {
     /** Stage 1 of the bell cascade, loaded once (it maps a 4 MB model). Shared by the session and Replay. */
     val bellClassifier: BellClassifier by lazy { YamnetBellClassifier.loadOrFallback(this) }
 
-    val bugReports: BugReports by lazy { BugReports(this, NotConfiguredAppCheck) }
+    val bugReports: BugReports by lazy { BugReports(this, appCheck()) }
+
+    private fun appCheck(): AppCheckTokenSource = BuildConfig.FIREBASE_API_KEY.takeIf { it.isNotEmpty() }
+        ?.let { FirebaseAppCheckTokenSource(this, it) } ?: NotConfiguredAppCheck
 
     /** The session lives as long as the process; the foreground service keeps the process alive. */
     val session: SessionController by lazy {
