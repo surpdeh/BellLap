@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import net.belllap.core.model.BellSensitivity
 import net.belllap.core.model.CameraCapabilities
 import net.belllap.core.model.CameraFacing
@@ -40,7 +41,9 @@ import net.belllap.core.model.FinishLine
 import net.belllap.core.model.Fps
 import net.belllap.core.model.PreviewMapping
 import net.belllap.core.model.Resolution
+import net.belllap.core.model.SelfTestVerdict
 import net.belllap.core.model.VolumeKeyAction
+import net.belllap.session.SelfTestStatus
 
 @Composable
 fun SetupScreen(
@@ -59,6 +62,10 @@ fun SetupScreen(
     detectMessage: String? = null,
     mode: String = "SETUP",
     facings: Set<CameraFacing>? = null,
+    /** Whether this device passed the locked-screen self-test (F33). */
+    screenLockAvailable: Boolean = false,
+    selfTest: SelfTestStatus = SelfTestStatus.Idle,
+    onRunSelfTest: () -> Unit = {},
     mapping: PreviewMapping = PreviewMapping(),
     preview: @Composable () -> Unit = {},
 ) {
@@ -153,6 +160,9 @@ fun SetupScreen(
                 settings = settings,
                 capabilities = capabilities,
                 facings = facings,
+                screenLockAvailable = screenLockAvailable,
+                selfTest = selfTest,
+                onRunSelfTest = onRunSelfTest,
                 onChange = onSettingsChange,
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
@@ -243,6 +253,9 @@ fun SettingsOverlay(
     modifier: Modifier = Modifier,
     /** Cameras the device has (F25), or null while the probe is pending. */
     facings: Set<CameraFacing>? = null,
+    screenLockAvailable: Boolean = false,
+    selfTest: SelfTestStatus = SelfTestStatus.Idle,
+    onRunSelfTest: () -> Unit = {},
 ) {
     val resolutions = capabilities?.supportedResolutions()?.takeIf { it.isNotEmpty() }
     val timeoutRange = CaptureSettings.FLAG_TIMEOUT_RANGE_S
@@ -311,6 +324,19 @@ fun SettingsOverlay(
                 valueRange = timeoutRange.first.toFloat()..timeoutRange.last.toFloat(),
                 modifier = Modifier.testTag(TestTags.FLAG_TIMEOUT_SLIDER),
             )
+            Label("Locked-screen standby (advanced)")
+            ToggleRow(
+                "Allow screen lock",
+                settings.allowScreenLock && screenLockAvailable,
+                TestTags.TOGGLE_SCREEN_LOCK,
+                enabled = screenLockAvailable,
+            ) { onChange(settings.copy(allowScreenLock = it)) }
+            Text(selfTestMessage(selfTest, screenLockAvailable), color = Color.Black, fontSize = 12.sp)
+            Button(
+                onClick = onRunSelfTest,
+                enabled = selfTest !is SelfTestStatus.Countdown && selfTest != SelfTestStatus.Running,
+                modifier = Modifier.testTag(TestTags.SELF_TEST_BUTTON),
+            ) { Text("Run self-test") }
             val volume = settings.alertVolumePercent
             ToggleRow("Custom alert volume (default: maximum)", volume != null, TestTags.TOGGLE_VOLUME) {
                 onChange(settings.copy(alertVolumePercent = if (it) DEFAULT_OVERRIDE_VOLUME else null))
@@ -329,6 +355,22 @@ fun SettingsOverlay(
 }
 
 private const val DEFAULT_OVERRIDE_VOLUME = 80
+
+/** What the self-test section tells the user. */
+fun selfTestMessage(status: SelfTestStatus, passed: Boolean): String = when (status) {
+    SelfTestStatus.Idle ->
+        if (passed) {
+            "This phone passed the self-test."
+        } else {
+            "Run the self-test to unlock this option. It locks the phone, rings a simulated bell and records 5 s."
+        }
+    is SelfTestStatus.Countdown -> "Lock the phone now. The simulated bell fires in ${status.secondsLeft} s."
+    SelfTestStatus.Running -> "Testing with the screen locked. Unlock when the chime sounds or after about a minute."
+    is SelfTestStatus.Done -> when (val v = status.verdict) {
+        SelfTestVerdict.Passed -> "Passed. You can allow screen lock on this phone."
+        is SelfTestVerdict.Failed -> "Failed: ${v.reason.hint}"
+    }
+}
 
 fun volumeActionLabel(a: VolumeKeyAction): String = when (a) {
     VolumeKeyAction.OFF -> "Off"
@@ -368,13 +410,19 @@ private fun <T> Chips(
 }
 
 @Composable
-private fun ToggleRow(text: String, checked: Boolean, tag: String, onChange: (Boolean) -> Unit) {
+private fun ToggleRow(
+    text: String,
+    checked: Boolean,
+    tag: String,
+    enabled: Boolean = true,
+    onChange: (Boolean) -> Unit,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(text, color = Color.Black)
-        Switch(checked = checked, onCheckedChange = onChange, modifier = Modifier.testTag(tag))
+        Switch(checked = checked, onCheckedChange = onChange, enabled = enabled, modifier = Modifier.testTag(tag))
     }
 }

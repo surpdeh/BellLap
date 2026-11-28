@@ -43,6 +43,10 @@ data class CaptureSettings(
     val volumeDownAction: VolumeKeyAction = VolumeKeyAction.OFF,
     /** The finish line in normalised sensor coordinates (F11), or null when not drawn yet. */
     val finishLine: FinishLine? = null,
+    /** Lets the phone lock during standby (F33). Only takes effect on a device that passed the self-test. */
+    val allowScreenLock: Boolean = false,
+    /** The device id (see [ScreenLockSelfTest.deviceId]) that last passed the self-test, or null. */
+    val screenLockTestedDevice: String? = null,
 ) {
     init {
         require(flagTimeoutSeconds in FLAG_TIMEOUT_RANGE_S) { "flagTimeoutSeconds out of range" }
@@ -50,6 +54,12 @@ data class CaptureSettings(
             alertVolumePercent == null || alertVolumePercent in VOLUME_RANGE_PCT,
         ) { "alertVolumePercent out of range" }
     }
+
+    /** Whether the screen-lock option may be offered on [deviceId]: it passed the self-test. */
+    fun screenLockAvailable(deviceId: String): Boolean = screenLockTestedDevice == deviceId
+
+    /** Whether standby may run with the screen locked on [deviceId]. */
+    fun screenLockActive(deviceId: String): Boolean = allowScreenLock && screenLockAvailable(deviceId)
 
     fun actionFor(key: VolumeKey): VolumeKeyAction = when (key) {
         VolumeKey.UP -> volumeUpAction
