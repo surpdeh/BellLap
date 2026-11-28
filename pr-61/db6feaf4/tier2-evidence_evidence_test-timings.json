@@ -1,0 +1,99 @@
+{
+ "schema": 1,
+ "context": {
+  "run_id": "46124077183",
+  "run_attempt": "1",
+  "sha": "e8e84f00702a68cc8728c5985dfe0e1a9140bb8b",
+  "ref": "refs/pull/61/merge",
+  "event": "pull_request",
+  "runner_os": "ubuntu26",
+  "runner_image_version": "20261122.9.1",
+  "avd_cache_hit": "",
+  "boot": "cold",
+  "cpus": 4
+ },
+ "phases_at_s": {
+  "emulator_ready": 0.0,
+  "apks_ready": 26.2,
+  "tests_start": 26.2,
+  "tests_end": 416.9,
+  "evidence_collected": 420.4
+ },
+ "phase_spans_s": {
+  "emulator_ready->apks_ready": 26.2,
+  "apks_ready->tests_start": 0.0,
+  "tests_start->tests_end": 390.8,
+  "tests_end->evidence_collected": 3.4
+ },
+ "tests_total_s": 355.7,
+ "tests": [
+  {
+   "module": "app",
+   "class": "net.belllap.ReplayRaceSynthTest",
+   "name": "journeyAtRealTimeShowsEveryMode",
+   "seconds": 174.348,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.ReplayRaceSynthTest",
+   "name": "replaysRaceSynthAndLogsTheEventSequence",
+   "seconds": 119.373,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.LaunchTest",
+   "name": "launchesToSetupScreen",
+   "seconds": 29.248,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.AcquisitionRecordingTest",
+   "name": "recordNowWritesAnMp4AndAValidSidecar",
+   "seconds": 21.645,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.StandbyBellNowTest",
+   "name": "bellNowArmsFromStandby",
+   "seconds": 9.84,
+   "outcome": "passed"
+  },
+  {
+   "module": "audio:android",
+   "class": "net.belllap.audio.android.YamnetOnDeviceTest",
+   "name": "fullCascadeWithYamnetFindsBothBellLapsInTheFixture",
+   "seconds": 0.791,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.DeviceProbeTest",
+   "name": "probesTheDeviceAndSavesJson",
+   "seconds": 0.464,
+   "outcome": "passed"
+  },
+  {
+   "module": "audio:android",
+   "class": "net.belllap.audio.android.YamnetOnDeviceTest",
+   "name": "modelLoadsAndScoresSilenceLowAndAllClassesAsProbabilities",
+   "seconds": 0.02,
+   "outcome": "passed"
+  }
+ ],
+ "in_test_phases_s": {
+  "replaysRaceSynth": {
+   "prepare_wait": 11.095,
+   "replay": 95.676
+  },
+  "journey": {
+   "prepare": 4.272,
+   "prepare_wait": 0.008,
+   "replay": 67.555,
+   "total": 156.419
+  }
+ }
+}
