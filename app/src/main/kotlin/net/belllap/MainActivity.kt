@@ -35,6 +35,14 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import net.belllap.audio.android.AudioInput
+import net.belllap.audio.android.AudioRecordPcmRecorder
+import net.belllap.bugreport.AndroidTraceBundler
+import net.belllap.bugreport.BugReportController
+import net.belllap.bugreport.MediaVideoTrimmer
+import net.belllap.bugreport.PcmBellClipRecorder
+import net.belllap.bugreport.ReportWorker
+import net.belllap.bugreport.listCapturedVideos
 import net.belllap.capture.CameraUnavailableException
 import net.belllap.capture.PreviewSession
 import net.belllap.core.model.CameraCapabilities
@@ -48,6 +56,7 @@ import net.belllap.debug.DebugEntry
 import net.belllap.session.cameraNeeded
 import net.belllap.session.volumeKey
 import net.belllap.settings.SettingsRepository
+import net.belllap.ui.BugReportHost
 import net.belllap.ui.CameraPreview
 import net.belllap.ui.OEM_TIPS_URL
 import net.belllap.ui.OnboardingScreen
@@ -59,6 +68,7 @@ import net.belllap.ui.detectMessageFor
 import net.belllap.ui.permissionUi
 import net.belllap.vision.finishline.WhiteLineDetector
 import timber.log.Timber
+import java.io.File
 
 private val android.content.Context.settingsStore by preferencesDataStore("capture_settings")
 
@@ -175,6 +185,7 @@ class MainActivity : ComponentActivity() {
                 var mapping by remember { mutableStateOf(PreviewMapping()) }
                 var detectMessage by remember { mutableStateOf<String?>(null) }
                 var settingsOpen by rememberSaveable { mutableStateOf(false) }
+                var reportOpen by rememberSaveable { mutableStateOf(false) }
                 var asked by rememberSaveable { mutableStateOf(false) }
                 var granted by remember { mutableStateOf(allGranted()) }
                 var rationale by remember { mutableStateOf(shouldShowRationale()) }
@@ -185,6 +196,8 @@ class MainActivity : ComponentActivity() {
                 }
                 if (showOnboarding(state, onboarded, granted)) {
                     Onboarding(granted, { launcher.launch(REQUIRED_PERMISSIONS) }, { onboarded = true })
+                } else if (reportOpen && state == State.Setup) {
+                    BugReport(granted) { reportOpen = false }
                 } else if (state != State.Setup && granted) {
                     if (cameraNeeded(state)) HiddenCamera(settings)
                     StandbyScreen(
@@ -214,6 +227,7 @@ class MainActivity : ComponentActivity() {
                             detectMessage = detectMessage,
                             onDetectLine = { scope.launch { detectMessage = detectAndStoreLine(repo) } },
                             onOpenSystemSettings = ::openAppSettings,
+                            onReportProblem = { reportOpen = true },
                             preview = {
                                 CameraPreview(settings, onMapping = { mapping = it }) { caps ->
                                     capabilities = caps
@@ -227,6 +241,40 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    @Composable
+    private fun BugReport(micGranted: Boolean, onClose: () -> Unit) {
+        val app = application as BellLapApp
+        val scope = rememberCoroutineScope()
+        val controller = remember {
+            val acquisitions = File(filesDir, "acquisitions")
+            val micSource = AudioInput.choose(AudioInput.unprocessedSupported(app))
+            BugReportController(
+                scope = scope,
+                bell = PcmBellClipRecorder {
+                    AudioRecordPcmRecorder(
+                        AudioInput.choose(AudioInput.unprocessedSupported(app)),
+                    )
+                },
+                trimmer = MediaVideoTrimmer(),
+                bundler = AndroidTraceBundler(File(filesDir, "logs"), acquisitions),
+                queue = app.bugReports.queue,
+                scratch = File(cacheDir, "bugreport-draft"),
+                captured = listCapturedVideos(acquisitions),
+                reportContext = app.bugReports::reportContext,
+                configured = { app.bugReports.configured },
+                schedule = { ReportWorker.schedule(app) },
+                bellAvailable = micGranted,
+            )
+        }
+        BugReportHost(
+            controller = controller,
+            reports = app.bugReports.queue.reports,
+            progress = app.bugReports.queue.progress,
+            onOpenIssue = { startActivity(Intent(Intent.ACTION_VIEW, it.toUri())) },
+            onClose = onClose,
+        )
     }
 
     /** Keeps the camera bound for recording while the black screen shows, so nothing bright appears (F17). */

@@ -56,6 +56,7 @@ fun SetupScreen(
     modifier: Modifier = Modifier,
     onStandby: () -> Unit = {},
     onDetectLine: () -> Unit = {},
+    onReportProblem: (() -> Unit)? = null,
     detectMessage: String? = null,
     mode: String = "SETUP",
     facings: Set<CameraFacing>? = null,
@@ -118,6 +119,7 @@ fun SetupScreen(
                         },
                         modifier = Modifier.testTag(TestTags.DETECT_BUTTON),
                     ) { Text("Detect line") }
+                    ReportProblemButton(onReportProblem)
                     detectMessage?.let {
                         Text(
                             it,
@@ -161,6 +163,12 @@ fun SetupScreen(
             )
         }
     }
+}
+
+@Composable
+private fun ReportProblemButton(onClick: (() -> Unit)?) {
+    if (onClick == null) return
+    Button(onClick = onClick, modifier = Modifier.testTag(TestTags.REPORT_BUTTON)) { Text("Report a problem") }
 }
 
 @Composable

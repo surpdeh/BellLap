@@ -28,7 +28,7 @@ interface VideoTrimmer {
 }
 
 /** Builds the automatic attachments (trace zip, capability dump) into [outDir]. */
-interface TraceBundler {
+fun interface TraceBundler {
     suspend fun bundle(outDir: File): List<Attachment>
 }
 
