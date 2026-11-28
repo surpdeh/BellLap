@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/surpdeh/belllap/docs/sidecar.schema.json",
+  "title": "BellLap acquisition sidecar (acq_<id>.json)",
+  "description": "Written beside each acquisition MP4. All times are frame PTS in microseconds on the camera clock, never wall-clock time. Mirrors net.belllap.core.model.Sidecar; SidecarTest keeps the two in step.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "id", "name", "videoFile", "device", "fps", "width", "height", "line",
+    "firstFramePtsUs", "crossings", "flagIntervals", "appVersion"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "enum": [1] },
+    "id": { "type": "string", "minLength": 1 },
+    "name": { "type": "string", "minLength": 1 },
+    "videoFile": { "type": "string", "minLength": 1 },
+    "device": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["manufacturer", "model", "sdkInt"],
+      "properties": {
+        "manufacturer": { "type": "string" },
+        "model": { "type": "string" },
+        "sdkInt": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "fps": { "type": "integer", "minimum": 1 },
+    "width": { "type": "integer", "minimum": 1 },
+    "height": { "type": "integer", "minimum": 1 },
+    "line": {
+      "description": "The finish line in normalised sensor coordinates, or null when none was drawn.",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["start", "end"],
+          "properties": {
+            "start": { "$ref": "#/$defs/point" },
+            "end": { "$ref": "#/$defs/point" }
+          }
+        }
+      ]
+    },
+    "firstFramePtsUs": { "type": "integer", "minimum": 0 },
+    "crossings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ptsUs", "frameIndex", "confidence", "source"],
+        "properties": {
+          "ptsUs": { "type": "integer", "minimum": 0 },
+          "frameIndex": { "type": "integer", "minimum": 0 },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+          "source": { "type": "string", "enum": ["live", "refined", "manual"] }
+        }
+      }
+    },
+    "flagIntervals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["startPtsUs", "endPtsUs"],
+        "properties": {
+          "startPtsUs": { "type": "integer", "minimum": 0 },
+          "endPtsUs": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "appVersion": { "type": "string", "minLength": 1 }
+  },
+  "$defs": {
+    "point": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": {
+        "x": { "type": "number", "minimum": 0, "maximum": 1 },
+        "y": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    }
+  }
+}
