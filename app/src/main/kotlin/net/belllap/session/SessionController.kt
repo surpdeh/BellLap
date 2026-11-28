@@ -16,8 +16,6 @@ import net.belllap.audio.bell.BellTrace
 import net.belllap.audio.source.AudioSource
 import net.belllap.core.model.BellSensitivity
 import net.belllap.core.model.CaptureSettings
-import net.belllap.core.model.VolumeKey
-import net.belllap.core.model.VolumeKeyAction
 import net.belllap.core.service.SessionHost
 import net.belllap.core.statemachine.Event
 import net.belllap.core.statemachine.SessionMachine
@@ -59,7 +57,9 @@ class SessionController(
     private val machine = SessionMachine(nowMs = nowMs())
     private val mutableState = MutableStateFlow<State>(machine.state)
     private val mutableBell = MutableStateFlow(BellStatus())
-    private var settings = CaptureSettings()
+    /** The settings last passed to [updateSettings]. */
+    var settings = CaptureSettings()
+        private set
     private var timer: Job? = null
     private var listener: Job? = null
 
@@ -81,27 +81,6 @@ class SessionController(
     fun bellNow() = dispatch(Event.BellNow, "user")
 
     fun stop() = dispatch(Event.Stop, "user")
-
-    /**
-     * A hardware volume key was pressed (F38). Returns true when the key is mapped and the session is past SETUP,
-     * so the activity should swallow it; otherwise the key keeps its system volume behaviour. ARM works as
-     * "bell now" from STANDBY, and RECORD starts recording from ARMED; the state machine ignores the event
-     * (and logs it) in any other mode.
-     */
-    @Synchronized
-    fun volumeKey(key: VolumeKey, repeat: Boolean = false): Boolean {
-        if (!mapped(key)) return false
-        if (!repeat) {
-            val event = if (settings.actionFor(key) == VolumeKeyAction.ARM) Event.BellNow else Event.RecordNow
-            dispatch(event, "volume_${key.name.lowercase()}")
-        }
-        return true
-    }
-
-    /** True when [key] is mapped to an action and the session is past SETUP, so the key must not change the volume. */
-    @Synchronized
-    fun mapped(key: VolumeKey): Boolean =
-        machine.state != State.Setup && settings.actionFor(key) != VolumeKeyAction.OFF
 
     @Synchronized
     override fun dispatch(event: Event, trigger: String) {

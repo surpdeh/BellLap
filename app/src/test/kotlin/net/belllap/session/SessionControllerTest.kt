@@ -134,8 +134,7 @@ class SessionControllerTest {
         assertEquals(State.Setup, c.state.value)
         c.standby()
         assertFalse("unmapped key is not swallowed", c.volumeKey(VolumeKey.DOWN))
-        assertFalse(c.mapped(VolumeKey.DOWN))
-        assertEquals(State.Standby, c.state.value)
+                assertEquals(State.Standby, c.state.value)
     }
 
     @Test
