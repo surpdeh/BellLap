@@ -86,4 +86,4 @@ jobs:
           packageName: net.belllap
           releaseFiles: dist/belllap-${{ github.ref_name }}.aab
           track: internal
-          status: completed
+          status: draft # switch to completed after the first release is published in Play Console

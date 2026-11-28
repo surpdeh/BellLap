@@ -34,4 +34,6 @@ BELLLAP_KEYSTORE_FILE=/path/release.jks BELLLAP_KEYSTORE_PASSWORD=... BELLLAP_KE
   ./gradlew assembleRelease bundleRelease
 ```
 
+Play uploads use `status: draft` until the first release is published in Play Console. Then change it to `completed` in `release.yml`.
+
 Without `BELLLAP_KEYSTORE_FILE` the release build is unsigned, which is what PR builds get.
