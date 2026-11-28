@@ -12,7 +12,7 @@ Closes #
 
 ### Commands run (tier 1)
 ```
-<paste the summary output of ./gradlew testDebugUnitTest, :testing:harness:replay, recordRoborazziDebug, assembleDebug>
+<paste evidence/tier1/<run-id>/summary.txt from .claude/skills/verify-belllap/scripts/tier1.sh>
 ```
 
 ### Screenshots / recording
