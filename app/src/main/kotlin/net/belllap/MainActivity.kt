@@ -108,11 +108,13 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    /** Onboarding shows once per launch, from SETUP, until the user continues or everything is already granted. */
-    private fun showOnboarding(state: State, onboarded: Boolean, granted: Boolean): Boolean {
-        val ready = granted && notificationsGranted() && batteryExempt()
-        return state == State.Setup && !onboarded && !ready
-    }
+    /**
+     * First-run onboarding: shown from SETUP while the camera or microphone permission is missing, until the user
+     * continues. The notification and battery steps ride along as optional extras. Once the required permissions are
+     * granted the screen no longer gets in the way.
+     */
+    private fun showOnboarding(state: State, onboarded: Boolean, granted: Boolean): Boolean =
+        state == State.Setup && !onboarded && !granted
 
     @Suppress("LongMethod")
     override fun onCreate(savedInstanceState: Bundle?) {
