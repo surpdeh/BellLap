@@ -176,12 +176,6 @@ fun SetupScreen(
 }
 
 @Composable
-private fun ReportProblemButton(onClick: (() -> Unit)?) {
-    if (onClick == null) return
-    Button(onClick = onClick, modifier = Modifier.testTag(TestTags.REPORT_BUTTON)) { Text("Report a problem") }
-}
-
-@Composable
 fun CameraPreviewPlaceholder(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier

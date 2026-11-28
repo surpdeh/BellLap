@@ -27,9 +27,9 @@ import net.belllap.core.log.AndroidInfo
 import net.belllap.core.log.EventLog
 import net.belllap.core.log.RollingFileTree
 import net.belllap.core.model.DeviceCapabilities
+import net.belllap.core.model.SavedAcquisition
 import net.belllap.core.model.ScreenLockSelfTest
 import net.belllap.core.model.SelfTestVerdict
-import net.belllap.core.model.SavedAcquisition
 import net.belllap.core.model.SidecarDevice
 import net.belllap.core.service.AlarmBeepPlayer
 import net.belllap.core.service.SessionHost

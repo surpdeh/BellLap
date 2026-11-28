@@ -66,9 +66,13 @@ class CrossingRefinementTest {
         val noLine = saved(sidecar(emptyList(), withLine = false))
         assertNull(CrossingRefinement(FakeDecoder(fixture.frames!!)).refine(noLine))
         val live = SidecarCrossing(CAMERA_START_US, 0, 0.5f, CrossingSource.LIVE)
-        val noFrames = SavedAcquisition("b", tmp.newFile("b.mp4"), tmp.newFile("b.json").apply {
-            writeText(sidecar(listOf(live)).encode())
-        })
+        val noFrames = SavedAcquisition(
+            "b",
+            tmp.newFile("b.mp4"),
+            tmp.newFile("b.json").apply {
+                writeText(sidecar(listOf(live)).encode())
+            },
+        )
         assertNull(CrossingRefinement(FakeDecoder(emptyList())).refine(noFrames))
         assertEquals(listOf(live), Sidecar.decode(noFrames.sidecar.readText()).crossings)
     }
