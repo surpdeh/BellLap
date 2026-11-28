@@ -1,0 +1,127 @@
+{
+ "schema": 1,
+ "context": {
+  "run_id": "46140696157",
+  "run_attempt": "1",
+  "sha": "24ac5acbe3553e3e52450edb6e3570cbb0d57766",
+  "ref": "refs/pull/70/merge",
+  "event": "pull_request",
+  "runner_os": "ubuntu26",
+  "runner_image_version": "20261122.9.1",
+  "avd_cache_hit": "true",
+  "boot": "snapshot",
+  "cpus": 4
+ },
+ "phases_at_s": {
+  "emulator_ready": 0.0,
+  "apks_ready": 224.7,
+  "tests_start": 224.8,
+  "tests_end": 573.6,
+  "evidence_collected": 577.3
+ },
+ "phase_spans_s": {
+  "emulator_ready->apks_ready": 224.7,
+  "apks_ready->tests_start": 0.1,
+  "tests_start->tests_end": 348.8,
+  "tests_end->evidence_collected": 3.7
+ },
+ "tests_total_s": 327.9,
+ "tests": [
+  {
+   "module": "app",
+   "class": "net.belllap.ReplayRaceSynthTest",
+   "name": "journeyAtRealTimeShowsEveryMode",
+   "seconds": 169.198,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.ReplayRaceSynthTest",
+   "name": "replaysRaceSynthAndLogsTheEventSequence",
+   "seconds": 80.685,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.AcquisitionRecordingTest",
+   "name": "recordNowWritesAnMp4AndAValidSidecar",
+   "seconds": 19.217,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.ReviewPlayerTest",
+   "name": "opensTheFixtureNudgesZoomsAndEditsMarks",
+   "seconds": 15.847,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.BugReportFlowTest",
+   "name": "describeConsentSendFilesTheIssue",
+   "seconds": 10.795,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.StandbyBellNowTest",
+   "name": "bellNowArmsFromStandby",
+   "seconds": 8.991,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.BugReportFlowTest",
+   "name": "backFromConsentSendsNothing",
+   "seconds": 8.648,
+   "outcome": "passed"
+  },
+  {
+   "module": "capture",
+   "class": "net.belllap.capture.PreRollEncoderTest",
+   "name": "preRollAndLiveVideoSpliceWithContinuousPts",
+   "seconds": 7.108,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.LaunchTest",
+   "name": "launchesToSetupScreen",
+   "seconds": 6.558,
+   "outcome": "passed"
+  },
+  {
+   "module": "audio:android",
+   "class": "net.belllap.audio.android.YamnetOnDeviceTest",
+   "name": "fullCascadeWithYamnetFindsBothBellLapsInTheFixture",
+   "seconds": 0.767,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.DeviceProbeTest",
+   "name": "probesTheDeviceAndSavesJson",
+   "seconds": 0.1,
+   "outcome": "passed"
+  },
+  {
+   "module": "audio:android",
+   "class": "net.belllap.audio.android.YamnetOnDeviceTest",
+   "name": "modelLoadsAndScoresSilenceLowAndAllClassesAsProbabilities",
+   "seconds": 0.026,
+   "outcome": "passed"
+  }
+ ],
+ "in_test_phases_s": {
+  "replaysRaceSynth": {
+   "prepare_wait": 4.797,
+   "replay": 66.269
+  },
+  "journey": {
+   "prepare": 3.218,
+   "prepare_wait": 0.013,
+   "replay": 67.794,
+   "total": 155.429
+  }
+ }
+}
