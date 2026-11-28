@@ -1,0 +1,120 @@
+{
+ "schema": 1,
+ "context": {
+  "run_id": "46137034512",
+  "run_attempt": "1",
+  "sha": "380de7a85e3f87831eb00b325b23080db961f7b9",
+  "ref": "refs/pull/69/merge",
+  "event": "pull_request",
+  "runner_os": "ubuntu26",
+  "runner_image_version": "20261122.9.1",
+  "avd_cache_hit": "true",
+  "boot": "snapshot",
+  "cpus": 4
+ },
+ "phases_at_s": {
+  "emulator_ready": 0.0,
+  "apks_ready": 158.4,
+  "tests_start": 158.4,
+  "tests_end": 393.1,
+  "evidence_collected": 397.0
+ },
+ "phase_spans_s": {
+  "emulator_ready->apks_ready": 158.4,
+  "apks_ready->tests_start": 0.0,
+  "tests_start->tests_end": 234.7,
+  "tests_end->evidence_collected": 3.9
+ },
+ "tests_total_s": 218.8,
+ "tests": [
+  {
+   "module": "app",
+   "class": "net.belllap.ReplayRaceSynthTest",
+   "name": "journeyAtRealTimeShowsEveryMode",
+   "seconds": 120.718,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.ReplayRaceSynthTest",
+   "name": "replaysRaceSynthAndLogsTheEventSequence",
+   "seconds": 44.13,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.AcquisitionRecordingTest",
+   "name": "recordNowWritesAnMp4AndAValidSidecar",
+   "seconds": 18.003,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.StandbyBellNowTest",
+   "name": "bellNowArmsFromStandby",
+   "seconds": 8.685,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.BugReportFlowTest",
+   "name": "describeConsentSendFilesTheIssue",
+   "seconds": 7.454,
+   "outcome": "passed"
+  },
+  {
+   "module": "capture",
+   "class": "net.belllap.capture.PreRollEncoderTest",
+   "name": "preRollAndLiveVideoSpliceWithContinuousPts",
+   "seconds": 7.09,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.BugReportFlowTest",
+   "name": "backFromConsentSendsNothing",
+   "seconds": 7.017,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.LaunchTest",
+   "name": "launchesToSetupScreen",
+   "seconds": 5.013,
+   "outcome": "passed"
+  },
+  {
+   "module": "audio:android",
+   "class": "net.belllap.audio.android.YamnetOnDeviceTest",
+   "name": "fullCascadeWithYamnetFindsBothBellLapsInTheFixture",
+   "seconds": 0.455,
+   "outcome": "passed"
+  },
+  {
+   "module": "app",
+   "class": "net.belllap.DeviceProbeTest",
+   "name": "probesTheDeviceAndSavesJson",
+   "seconds": 0.199,
+   "outcome": "passed"
+  },
+  {
+   "module": "audio:android",
+   "class": "net.belllap.audio.android.YamnetOnDeviceTest",
+   "name": "modelLoadsAndScoresSilenceLowAndAllClassesAsProbabilities",
+   "seconds": 0.017,
+   "outcome": "passed"
+  }
+ ],
+ "in_test_phases_s": {
+  "replaysRaceSynth": {
+   "prepare_wait": 3.511,
+   "replay": 34.222
+  },
+  "journey": {
+   "prepare": 1.675,
+   "prepare_wait": 0.027,
+   "replay": 47.328,
+   "total": 109.83
+  }
+ }
+}
