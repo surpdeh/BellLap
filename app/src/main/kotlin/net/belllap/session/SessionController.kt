@@ -18,10 +18,13 @@ import net.belllap.core.model.AcquisitionNaming
 import net.belllap.core.model.AcquisitionSink
 import net.belllap.core.model.BellSensitivity
 import net.belllap.core.model.CaptureSettings
+import net.belllap.core.model.CrossingSource
+import net.belllap.core.model.FinishLine
 import net.belllap.core.model.FlagIntervalTracker
 import net.belllap.core.model.RecordingUnavailableException
 import net.belllap.core.model.SelfTestVerdict
 import net.belllap.core.model.Sidecar
+import net.belllap.core.model.SidecarCrossing
 import net.belllap.core.model.SidecarDevice
 import net.belllap.core.model.StorageGuard
 import net.belllap.core.service.SessionHost
@@ -32,6 +35,9 @@ import net.belllap.core.statemachine.Event
 import net.belllap.core.statemachine.SessionMachine
 import net.belllap.core.statemachine.State
 import net.belllap.core.statemachine.cueOrNull
+import net.belllap.vision.core.Frame
+import net.belllap.vision.finishline.SlitScanCrossingDetector
+import net.belllap.vision.finishline.toSidecar
 import java.util.UUID
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -61,7 +67,9 @@ interface SessionLog {
  * current settings allow that cue (F15).
  *
  * Recording (F17): the machine's StartRecording and StopRecording effects are routed to [sink], and flag visibility
- * changes are tracked by the sink's frame PTS for the sidecar. [eventLabel] names the day's acquisitions ("<label>
+ * changes are tracked by the sink's frame PTS for the sidecar. Crossings (F18): [onFrame] feeds camera frames to the
+ * slit-scan detector while the camera is needed, so its background is warm when ACQUISITION starts; only in
+ * ACQUISITION does a crossing beep and go to the sidecar. [eventLabel] names the day's acquisitions ("<label>
  * Finish N"); it is a label, not a time base.
  */
 @Suppress("TooManyFunctions")
@@ -94,6 +102,8 @@ class SessionController(
     private var active: ActiveRecording? = null
     private var selfTestJob: Job? = null
     private val mutableSelfTest = MutableStateFlow<SelfTestStatus>(SelfTestStatus.Idle)
+    private var crossings: SlitScanCrossingDetector? = null
+    private var crossingLine: FinishLine? = null
     private val mutableNotice = MutableStateFlow<String?>(null)
 
     /** The alert-stream level for cues: the custom percent, or 100 (maximum) by default. */
@@ -206,7 +216,32 @@ class SessionController(
         val settings: CaptureSettings,
         val firstFramePtsUs: Long,
         val flags: FlagIntervalTracker,
+        val crossings: MutableList<SidecarCrossing> = ArrayList(),
     )
+
+    /**
+     * One camera frame (unrotated sensor luma, PTS = the camera timestamp) from the analysis stream. Runs the
+     * crossing detector while the camera is needed; in ACQUISITION each crossing beeps and is kept for the sidecar.
+     */
+    @Synchronized
+    fun onFrame(frame: Frame) {
+        val line = settings.finishLine
+        if (!cameraNeeded(machine.state) || line == null) {
+            crossings = null
+            return
+        }
+        val detector = crossings?.takeIf { crossingLine == line }
+            ?: SlitScanCrossingDetector(line).also {
+                crossings = it
+                crossingLine = line
+            }
+        val found = detector.accept(frame)
+        if (innerState() !is State.Acquisition) return
+        found.forEach { c ->
+            active?.let { it.crossings += c.toSidecar(it.firstFramePtsUs, it.settings.fps.value, CrossingSource.LIVE) }
+            dispatch(Event.CrossingDetected, "crossing")
+        }
+    }
 
     private fun flagVisible(): Boolean? =
         (innerState() as? State.Acquisition)?.flagVisible
@@ -250,6 +285,7 @@ class SessionController(
             height = rec.settings.resolution.height,
             line = rec.settings.finishLine,
             firstFramePtsUs = rec.firstFramePtsUs,
+            crossings = rec.crossings.toList(),
             flagIntervals = rec.flags.finish(endPts),
             appVersion = appVersion,
         )

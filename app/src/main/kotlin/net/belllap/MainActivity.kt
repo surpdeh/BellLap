@@ -18,6 +18,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -263,6 +264,11 @@ class MainActivity : ComponentActivity() {
     private fun HiddenCamera(settings: CaptureSettings, activityVisible: StateFlow<Boolean>) {
         val context = LocalContext.current
         val owner = LocalLifecycleOwner.current
+        val session = (application as BellLapApp).session
+        DisposableEffect(session) {
+            PreviewSession.frameListener = session::onFrame
+            onDispose { PreviewSession.frameListener = null }
+        }
         val visible by activityVisible.collectAsState()
         LaunchedEffect(settings.facing, settings.resolution, settings.fps, visible) {
             // While the activity is stopped the headless camera (F33) owns the bind; unbinding here would drop it.

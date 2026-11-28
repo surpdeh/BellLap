@@ -90,13 +90,37 @@ object ReplayRunner {
     }
 
     private fun crossings(frames: List<Frame>, labels: Labels, prefix: String, out: MutableMap<String, Double>) {
-        val detector = BaselineCrossingDetector()
-        frames.forEach(detector::accept)
+        val run = CrossingRun.over(frames)
         val frameNs = NS_PER_S / requireNotNull(labels.fps)
-        val m = Metrics.match(labels.crossings.map { it.ptsNs }, detector.crossingsNs.sorted(), Math.round(frameNs))
-        out["$prefix.crossings.recall"] = Metrics.recall(m)
-        out["$prefix.crossings.precision"] = Metrics.precision(m)
-        out["$prefix.crossings.mean_abs_error_frames"] = Metrics.meanAbsError(m) / frameNs
-        out["$prefix.crossings.count_error"] = Math.abs(detector.crossingsNs.size - labels.crossings.size).toDouble()
+        crossingMetrics("$prefix.crossings", labels, run.live.map { it.ptsNs }, frameNs, out)
+        crossingMetrics("$prefix.crossings_refined", labels, run.refined.map { it.ptsNs }, frameNs, out)
     }
+
+    /**
+     * Matches detections to labels within [CROSSING_TOLERANCE_FRAMES] frames. `count_error_per_bunch` is the worst
+     * |detected - labelled| over bunches, with each detection counted in the bunch of the nearest label in time.
+     */
+    private fun crossingMetrics(
+        key: String,
+        labels: Labels,
+        found: List<Long>,
+        frameNs: Double,
+        out: MutableMap<String, Double>,
+    ) {
+        val truth = labels.crossings
+        val sorted = found.sorted()
+        val m = Metrics.match(truth.map { it.ptsNs }, sorted, Math.round(frameNs * CROSSING_TOLERANCE_FRAMES))
+        val detectedByGroup = sorted.groupingBy { t -> truth.minBy { Math.abs(it.ptsNs - t) }.group }.eachCount()
+        val labelledByGroup = truth.groupingBy { it.group }.eachCount()
+        out["$key.recall"] = Metrics.recall(m)
+        out["$key.precision"] = Metrics.precision(m)
+        out["$key.mean_abs_error_frames"] = Metrics.meanAbsError(m) / frameNs
+        out["$key.max_abs_error_frames"] = (m.errorsNs.maxOfOrNull { Math.abs(it) } ?: 0L) / frameNs
+        out["$key.count_error"] = Math.abs(sorted.size - truth.size).toDouble()
+        out["$key.count_error_per_bunch"] = labelledByGroup.maxOfOrNull { (g, n) ->
+            Math.abs((detectedByGroup[g] ?: 0) - n).toDouble()
+        } ?: 0.0
+    }
+
+    private const val CROSSING_TOLERANCE_FRAMES = 2
 }

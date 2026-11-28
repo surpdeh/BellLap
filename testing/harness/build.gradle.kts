@@ -7,6 +7,7 @@ dependencies {
     implementation(project(":testing:fixtures"))
     implementation(project(":audio:bell"))
     implementation(project(":vision:flag"))
+    implementation(project(":vision:finishline"))
     implementation(libs.kotlinx.serialization.json)
     testImplementation(libs.junit)
 }

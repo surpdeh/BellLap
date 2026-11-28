@@ -1,4 +1,4 @@
-package net.belllap.debug
+package net.belllap.capture
 
 import android.media.MediaCodec
 import android.media.MediaExtractor
