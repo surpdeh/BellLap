@@ -11,7 +11,7 @@ BellLap is an Android app (Kotlin, Compose, CameraX) that tracks the finishing o
 1. Read the issue, `docs/PLAN.md` §2 (architecture) and the relevant section of the research doc. Restate the acceptance criteria and the required verification evidence.
 2. Work on a branch named `feat/Fxx-short-name` (or `claude/...` when the harness assigns one). Use small commits with conventional-commit messages.
 3. Write tests first for logic: state machine, detectors, sidecar and parsers.
-4. Before opening the PR, run the tier 1 verification in `verify-belllap` and paste its output into the PR template's **Verification** section. **Report a check that could not run as inconclusive.**
+4. Run `scripts/precheck.sh` before every push (detekt, lint, unit tests and the CI-parity check, about 1 min warm). A hook in `.claude/settings.json` runs it on `git push` and blocks the push when it fails. Before opening the PR, run the tier 1 verification in `verify-belllap` and paste its output into the PR template's **Verification** section. **Report a check that could not run as inconclusive.**
 5. Open the PR with `Closes #<issue>`. Then wait for CI, read the tier 2 evidence comment and fix any failures.
 6. For risky or larger features, `/poteto-mode` (pstack) is available. Use `/architect` before writing code and `/interrogate` before review.
 

@@ -37,20 +37,26 @@ ls "$ANDROID_HOME/platforms" | grep android-36 && ./gradlew help -q >/dev/null &
 
 ## Drive
 
+Run `scripts/precheck.sh` before every push. It runs the CI-parity check, then `detekt lintDebug testDebugUnitTest` (about 1 min warm, no replay or screenshots), and exits 0 pass, 1 fail, 2 inconclusive. The `PreToolUse` hook in `.claude/settings.json` runs it on any `git push` and blocks the push unless it passes. It skips the re-run when the last pass was at the same HEAD with a clean tree (`build/precheck/passed-head`).
+
 One command runs the whole tier-1 set, collects evidence and prints a summary:
 
 ```bash
-.claude/skills/verify-belllap/scripts/tier1.sh [run-id]    # about 2 min cold, under 30 s warm
+.claude/skills/verify-belllap/scripts/tier1.sh [--record-screenshots] [run-id]    # about 2 min cold, under 30 s warm
 ```
 
-It runs doctor, then `testDebugUnitTest`, `:testing:harness:replay`, `recordRoborazziDebug`, `lintDebug assembleDebug`, retries once on a Maven 429, and exits 1 if any step fails. For a narrower loop, run a single piece:
+It runs doctor, the CI-parity check, then every Gradle call CI runs, read from `scripts/ci/gradle-checks.txt` (the same file `ci.yml` reads, so a check added to CI runs here too). It retries once on a Maven 429, reports a step that could not run as `INCONCLUSIVE`, and exits 1 unless every step passes.
+
+Screenshots run `verifyRoborazziDebug` by default, so drift from the committed goldens fails the run, as it does in CI. Pass `--record-screenshots` only when the change intentionally alters the UI. It runs `recordRoborazziDebug` instead, which rewrites the goldens in `app/src/test/screenshots/`. Review them and commit them with the UI change.
+
+For a narrower loop, run a single piece:
 
 | Purpose | Command | Proof |
 |---|---|---|
 | Unit tests | `./gradlew testDebugUnitTest` | `*/build/test-results/testDebugUnitTest/*.xml` (tests/failures counts) |
 | One module | `./gradlew :core:statemachine:test --tests '*Foo*'` | same, per module |
 | Detector metrics | `./gradlew :testing:harness:replay` | Writes `testing/harness/build/reports/metrics.json`, `contact-sheet.png` and `spectrogram.png`; fails below `testing/thresholds.json`. |
-| Screenshots | `./gradlew recordRoborazziDebug` | `app/src/test/screenshots/*.png`. **Open each with the Read tool and say what it shows.** |
+| Screenshots | `./gradlew verifyRoborazziDebug` (`recordRoborazziDebug` only for an intended UI change) | `app/src/test/screenshots/*.png`; on drift, the compare images in `app/build/outputs/roborazzi/`. **Open each with the Read tool and say what it shows.** |
 | Build | `./gradlew lintDebug assembleDebug` | `app/build/outputs/apk/debug/app-debug.apk` |
 
 Roborazzi writes golden PNGs into the tracked directory `app/src/test/screenshots/`. After a run, `git status` should show a change only where the UI intentionally changed. If a screenshot changed, commit the new golden with the UI change that caused it.

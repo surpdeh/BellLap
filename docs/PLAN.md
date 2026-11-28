@@ -242,7 +242,8 @@ Setup and capture:
   - Sensitivity setting and a "Bell now" button.
   - Metrics on fixtures: target recall ≥ 0.9 and < 0.2 false alarms per hour.
   - Done: `:audio:bell` cascade, `:audio:android` (AudioRecord + LiteRT YAMNet), STANDBY screen. A train of ≥ 4 clean strikes in 3 s fires without YAMNet, because YAMNet misses a bell in loud noise. Tier 3 (a real bell on a phone) is still open.
-- [ ] **F15 Alert player:** ([#14](https://github.com/surpdeh/belllap/issues/14)) armed beep series at +10 s, beep per finisher and stand-down chime, all at maximum volume through the alarm stream. Volume is restored afterwards.
+- [x] **F15 Alert player:** ([#14](https://github.com/surpdeh/belllap/issues/14)) armed beep series at +10 s, beep per finisher and stand-down chime, all at maximum volume through the alarm stream. Volume is restored afterwards.
+  - Done: `BeepSink`, `VolumeGuard` and `ToneSynth` (`:core:statemachine`, pure); `AlarmBeepPlayer` (`:core:service`, AudioTrack on USAGE_ALARM); `SessionController` plays each effect's cue when its toggle (armed beeps, crossing beeps, stand-down chime) is on. The alarm level is restored after each cue. `alertVolumePercent` null now means maximum. Tier 3 (audible at 10 m on a real phone, volume restored, Do Not Disturb behaviour) is still open: the cloud container has no audio hardware.
 - [x] **F25 Device capability probe:** ([#15](https://github.com/surpdeh/belllap/issues/15)) dumps camera hardware level, fps ranges, supported session configurations and audio sources. Included in bug reports.
   - Done: `DeviceProbe` (`:capture`) reads Camera2 (hardware level, AE fps ranges, per-use-case sizes with max fps, high-speed sizes), audio sources and AVC/HEVC/AAC encoders into the pure `DeviceCapabilities` (`:core:model`). The app writes `logs/device-capabilities.json` beside the event logs at start, so a bug report that bundles the logs includes it. The debug build has a **Device (debug)** screen. Settings gate the camera, resolution and fps chips on the probe. Use-case sets are PREVIEW+ANALYSIS (gating), and the VIDEO sizes for F17. Tier 3 (real phones) is still open.
 
@@ -306,7 +307,7 @@ Bug reports:
 - [ ] **F35 ML flag detector:** ([#29](https://github.com/surpdeh/belllap/issues/29)) EfficientDet-Lite0 single-class model, with a training pipeline and dataset from consented field footage.
 - [ ] **F36 Rider detection and tracking:** ([#30](https://github.com/surpdeh/belllap/issues/30)) splits bunches and refines front-wheel crossing time in post-process.
 - [ ] **F37 Wear OS remote:** ([#31](https://github.com/surpdeh/belllap/issues/31)) watch tile and app with "Record now", "Bell now", "Stop" and a status view.
-- [ ] **F38 Volume-key shortcut:** ([#32](https://github.com/surpdeh/belllap/issues/32)) a hardware key arms or starts recording while the app is in the foreground.
+- [x] **F38 Volume-key shortcut:** ([#32](https://github.com/surpdeh/belllap/issues/32)) a hardware key arms or starts recording while the app is in the foreground.
 - [ ] **F40 Real-device CI:** ([#33](https://github.com/surpdeh/belllap/issues/33)) nightly Firebase Test Lab matrix of capability probes and camera smoke tests.
 - [ ] **F41 Release pipeline:** ([#34](https://github.com/surpdeh/belllap/issues/34)) signed AAB/APK on tag, GitHub Release, Play internal track (pending decision §1.7).
 

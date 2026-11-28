@@ -36,11 +36,18 @@ jobs:
           cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
 
       - name: Lint, unit tests, screenshots, assemble
-        run: ./gradlew --continue lintDebug detekt testDebugUnitTest verifyRoborazziDebug assembleDebug
+        # Task lists live in scripts/ci/gradle-checks.txt so tier1.sh and precheck.sh run the same checks.
+        run: |
+          . scripts/ci/lib.sh
+          tasks=$(gradle_tasks checks)
+          ./gradlew --continue $tasks
 
       - name: Detector metrics (synthetic fixtures)
         if: hashFiles('testing/harness/build.gradle.kts') != ''
-        run: ./gradlew :testing:harness:replay
+        run: |
+          . scripts/ci/lib.sh
+          tasks=$(gradle_tasks replay)
+          ./gradlew $tasks
 
       - uses: actions/setup-python@v6
         if: hashFiles('scripts/bell/replay-yamnet.sh') != ''
@@ -109,7 +116,12 @@ jobs:
       # system image and boots the emulator; scripts/ci/emulator-e2e.sh waits for it before running the tests.
       - name: Build test APKs in the background
         run: |
-          ( ./gradlew assembleDebug assembleDebugAndroidTest --console=plain; echo $? > prebuild.status ) > prebuild.log 2>&1 &
+          . scripts/ci/lib.sh
+          tasks=$(gradle_tasks apks)
+          {
+            ./gradlew $tasks --console=plain
+            echo $? > prebuild.status
+          } > prebuild.log 2>&1 &
 
       - name: Instrumented tests with screen recording
         uses: reactivecircus/android-emulator-runner@v2

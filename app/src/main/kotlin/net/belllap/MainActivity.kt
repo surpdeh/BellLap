@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
+import android.view.KeyEvent
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -36,9 +37,11 @@ import net.belllap.capture.PreviewSession
 import net.belllap.core.model.CameraCapabilities
 import net.belllap.core.model.CaptureSettings
 import net.belllap.core.model.PreviewMapping
+import net.belllap.core.model.VolumeKey
 import net.belllap.core.service.SessionForegroundService
 import net.belllap.core.service.dimmedStandby
 import net.belllap.core.statemachine.State
+import net.belllap.session.volumeKey
 import net.belllap.debug.DebugEntry
 import net.belllap.settings.SettingsRepository
 import net.belllap.ui.CameraPreview
@@ -53,6 +56,20 @@ import net.belllap.ui.permissionUi
 import net.belllap.vision.finishline.WhiteLineDetector
 
 private val android.content.Context.settingsStore by preferencesDataStore("capture_settings")
+
+/**
+ * First-run onboarding: shown from SETUP while the camera or microphone permission is missing, until the user
+ * continues. The notification and battery steps ride along as optional extras. Once the required permissions are
+ * granted the screen no longer gets in the way.
+ */
+private fun showOnboarding(state: State, onboarded: Boolean, granted: Boolean): Boolean =
+    state == State.Setup && !onboarded && !granted
+
+private fun volumeKeyOf(keyCode: Int): VolumeKey? = when (keyCode) {
+    KeyEvent.KEYCODE_VOLUME_UP -> VolumeKey.UP
+    KeyEvent.KEYCODE_VOLUME_DOWN -> VolumeKey.DOWN
+    else -> null
+}
 
 class MainActivity : ComponentActivity() {
     private fun allGranted() = REQUIRED_PERMISSIONS.all {
@@ -78,6 +95,18 @@ class MainActivity : ComponentActivity() {
         } else {
             window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
+    }
+
+    /** Volume keys act as shortcuts while the session is running (F38); a mapped key never changes the volume. */
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        val key = volumeKeyOf(keyCode) ?: return super.onKeyDown(keyCode, event)
+        val session = (application as BellLapApp).session
+        return session.volumeKey(key, down = true, repeat = event.repeatCount > 0) || super.onKeyDown(keyCode, event)
+    }
+
+    override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
+        val key = volumeKeyOf(keyCode) ?: return super.onKeyUp(keyCode, event)
+        return (application as BellLapApp).session.volumeKey(key, down = false) || super.onKeyUp(keyCode, event)
     }
 
     @SuppressLint("BatteryLife")
@@ -107,14 +136,6 @@ class MainActivity : ComponentActivity() {
             onContinue = onDone,
         )
     }
-
-    /**
-     * First-run onboarding: shown from SETUP while the camera or microphone permission is missing, until the user
-     * continues. The notification and battery steps ride along as optional extras. Once the required permissions are
-     * granted the screen no longer gets in the way.
-     */
-    private fun showOnboarding(state: State, onboarded: Boolean, granted: Boolean): Boolean =
-        state == State.Setup && !onboarded && !granted
 
     @Suppress("LongMethod")
     override fun onCreate(savedInstanceState: Bundle?) {

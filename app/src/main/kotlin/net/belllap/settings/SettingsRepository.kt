@@ -30,9 +30,13 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             bellAutomation = p[BELL] ?: d.bellAutomation,
             bellSensitivity = enumOrDefault(p[BELL_SENSITIVITY], d.bellSensitivity),
             flagAutomation = p[FLAG] ?: d.flagAutomation,
+            armedBeeps = p[ARMED_BEEPS] ?: d.armedBeeps,
             crossingBeeps = p[BEEPS] ?: d.crossingBeeps,
+            standDownChime = p[STAND_DOWN] ?: d.standDownChime,
             flagTimeoutSeconds = timeout ?: d.flagTimeoutSeconds,
             alertVolumePercent = volume,
+            volumeUpAction = enumOrDefault(p[VOLUME_UP], d.volumeUpAction),
+            volumeDownAction = enumOrDefault(p[VOLUME_DOWN], d.volumeDownAction),
             finishLine = p[FINISH_LINE]?.let(FinishLine::fromSidecarJson),
         )
     }
@@ -44,8 +48,12 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         p[BELL] = s.bellAutomation
         p[BELL_SENSITIVITY] = s.bellSensitivity.name
         p[FLAG] = s.flagAutomation
+        p[ARMED_BEEPS] = s.armedBeeps
         p[BEEPS] = s.crossingBeeps
+        p[STAND_DOWN] = s.standDownChime
         p[FLAG_TIMEOUT] = s.flagTimeoutSeconds
+        p[VOLUME_UP] = s.volumeUpAction.name
+        p[VOLUME_DOWN] = s.volumeDownAction.name
         val v = s.alertVolumePercent
         if (v == null) p.remove(ALERT_VOLUME) else p[ALERT_VOLUME] = v
         val line = s.finishLine
@@ -63,8 +71,12 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         val BELL_SENSITIVITY = stringPreferencesKey("bell_sensitivity")
         val FLAG = booleanPreferencesKey("flag_automation")
         val BEEPS = booleanPreferencesKey("crossing_beeps")
+        val ARMED_BEEPS = booleanPreferencesKey("armed_beeps")
+        val STAND_DOWN = booleanPreferencesKey("stand_down_chime")
         val FLAG_TIMEOUT = intPreferencesKey("flag_timeout_s")
         val ALERT_VOLUME = intPreferencesKey("alert_volume_pct")
+        val VOLUME_UP = stringPreferencesKey("volume_up_action")
+        val VOLUME_DOWN = stringPreferencesKey("volume_down_action")
         val FINISH_LINE = stringPreferencesKey("finish_line")
     }
 }
