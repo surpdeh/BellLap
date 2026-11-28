@@ -1,5 +1,8 @@
 package net.belllap.ui
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -46,6 +49,24 @@ class StandbyScreenTest {
     }
 
     @Test
+    fun recordNowIsOnlyInArmedAndShowsTheNotice() {
+        var record = 0
+        var state by mutableStateOf<State>(State.Armed)
+        composeRule.setContent {
+            StandbyScreen(state, listening, {}, {}, onRecordNow = { record++ }, notice = "Not enough free storage.")
+        }
+        composeRule.onNodeWithTag(TestTags.RECORD_NOW_BUTTON).assertIsDisplayed().performClick()
+        composeRule.onNodeWithTag(TestTags.RECORD_NOTICE).assertTextContains("Not enough free storage.")
+        assertEquals(1, record)
+        composeRule.onNodeWithTag(TestTags.BELL_NOW_BUTTON).assertDoesNotExist()
+        state = State.Standby
+        composeRule.onNodeWithTag(TestTags.RECORD_NOW_BUTTON).assertDoesNotExist()
+        state = State.Acquisition(flagVisible = false)
+        composeRule.onNodeWithTag(TestTags.RECORD_NOW_BUTTON).assertDoesNotExist()
+        composeRule.onNodeWithTag(TestTags.STOP_BUTTON).assertIsDisplayed()
+    }
+
+    @Test
     fun statusExplainsWhenDetectionIsOffBrokenOrModelless() {
         assertEquals("Bell detection is off. Use Bell now.", statusLine(State.Standby, BellStatus()))
         assertEquals(
@@ -57,6 +78,7 @@ class StandbyScreenTest {
             statusLine(State.Standby, BellStatus(true, "stage0-only", BellSensitivity.HIGH)),
         )
         assertEquals("Armed. Waiting for the chequered flag.", statusLine(State.Armed, listening))
+        assertEquals("Recording the finish.", statusLine(State.Acquisition(flagVisible = true), listening))
     }
 
     @Test
@@ -69,5 +91,11 @@ class StandbyScreenTest {
     fun armingScreenshot() {
         composeRule.setContent { StandbyScreen(State.Arming, listening, {}, {}) }
         composeRule.onNodeWithTag(TestTags.STANDBY_SCREEN).captureRoboImage("src/test/screenshots/standby_arming.png")
+    }
+
+    @Test
+    fun armedScreenshot() {
+        composeRule.setContent { StandbyScreen(State.Armed, listening, {}, {}) }
+        composeRule.onNodeWithTag(TestTags.STANDBY_SCREEN).captureRoboImage("src/test/screenshots/standby_armed.png")
     }
 }
