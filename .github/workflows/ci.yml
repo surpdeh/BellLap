@@ -153,6 +153,8 @@ jobs:
 
       - name: Instrumented tests with screen recording
         uses: reactivecircus/android-emulator-runner@v2
+        env:
+          AVD_CACHE_HIT: ${{ steps.avd-cache.outputs.cache-hit }} # recorded in evidence/test-timings.json
         with:
           api-level: 34
           # google_atd is headless (no SystemUI), so every screenshot and recording came out black.

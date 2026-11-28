@@ -3,6 +3,11 @@
 # then collects screenshots, the recording, logcat and the app event log into evidence/.
 set -uo pipefail
 mkdir -p evidence
+# Phase marks for scripts/ci/test-timings.py: `<name>\t<epoch ms>`. The first mark is when the emulator is up.
+PHASES=evidence/phases.tsv
+mark() { printf '%s\t%s\n' "$1" "$(date +%s%3N)" >> "$PHASES"; }
+: > "$PHASES"
+mark emulator_ready
 
 # Make sure the display is on and unlocked, otherwise screenshots and recordings are black.
 adb shell svc power stayon true || true
@@ -13,6 +18,9 @@ adb shell settings put global hide_error_dialogs 1 || true
 adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS || true
 
 adb logcat -c || true
+# Test timing lines on their own stream, so a full logcat ring buffer cannot drop them.
+adb logcat -s BellLapTiming:I > evidence/timing-logcat.txt 2>/dev/null &
+TIMING_PID=$!
 adb shell screenrecord --time-limit 180 /data/local/tmp/e2e.mp4 &
 REC_PID=$!
 
@@ -23,10 +31,14 @@ if [ -f prebuild.log ]; then
   cat prebuild.log
   echo "== end background APK build =="
 fi
+mark apks_ready
 
+mark tests_start
 # Keep the APKs installed afterwards so run-as can pull files/evidence.
 ./gradlew connectedDebugAndroidTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true
 STATUS=$?
+mark tests_end
+kill "$TIMING_PID" 2>/dev/null || true
 
 # SIGINT the on-device recorder (not just the adb client) so the MP4 is finalised.
 adb shell pkill -INT screenrecord || true
@@ -59,7 +71,14 @@ adb shell pm list features | grep -i camera || echo "no camera feature reported"
 adb shell dumpsys media.camera | head -15 || true
 echo "== end logcat excerpt =="
 
-command -v ffmpeg >/dev/null || echo "WARN: ffmpeg not found, no GIF"
+mark evidence_collected
+
+# Per-test and per-phase timings: job log, job summary and evidence/test-timings.json (kept for comparing runs).
+python3 -I scripts/ci/test-timings.py "$PWD" "$PHASES" evidence/timing-logcat.txt evidence/test-timings.json > evidence/test-timings.md \
+  || echo "WARN: test-timings.py failed"
+cat evidence/test-timings.md 2>/dev/null || true
+if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then cat evidence/test-timings.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true; fi
+
 if command -v ffmpeg >/dev/null && [ -s evidence/e2e.mp4 ]; then
   ffmpeg -loglevel error -y -i evidence/e2e.mp4 -vf "fps=8,scale=360:-1:flags=lanczos" evidence/e2e.gif || true
 fi
