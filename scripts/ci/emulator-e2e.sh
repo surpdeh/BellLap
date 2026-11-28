@@ -16,6 +16,14 @@ adb logcat -c || true
 adb shell screenrecord --time-limit 180 /data/local/tmp/e2e.mp4 &
 REC_PID=$!
 
+# Wait for the APK build that ci.yml started before the emulator booted, and show its log.
+if [ -f prebuild.log ]; then
+  while [ ! -f prebuild.status ]; do sleep 2; done
+  echo "== background APK build (exit $(cat prebuild.status)) =="
+  cat prebuild.log
+  echo "== end background APK build =="
+fi
+
 # Keep the APKs installed afterwards so run-as can pull files/evidence.
 ./gradlew connectedDebugAndroidTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true
 STATUS=$?
