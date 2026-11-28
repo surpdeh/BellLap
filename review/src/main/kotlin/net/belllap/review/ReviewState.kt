@@ -4,7 +4,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import net.belllap.core.model.CrossingSource
 import net.belllap.core.model.FrameClock
 import net.belllap.core.model.Sidecar
 import net.belllap.core.model.Vec2
@@ -23,6 +22,7 @@ import kotlin.math.roundToInt
  * [onChange] receives each edited sidecar, to persist it. [durationUs] is null until the player knows it.
  * The zoom lives here, not in the player, so stepping frames keeps it.
  */
+@Suppress("TooManyFunctions")
 class ReviewState(
     sidecar: Sidecar,
     durationUs: Long?,
@@ -48,7 +48,16 @@ class ReviewState(
 
     /** Last frame index of the clip, or the last mark's frame (at least 1) while the duration is unknown. */
     val lastIndex: Int
-        get() = if (durationKnown) clock.lastIndex else maxOf(1, sidecar.crossings.maxOfOrNull { clock.indexOfPts(it.ptsUs) } ?: 1)
+        get() = if (durationKnown) {
+            clock.lastIndex
+        } else {
+            maxOf(
+                1,
+                sidecar.crossings.maxOfOrNull {
+                    clock.indexOfPts(it.ptsUs)
+                } ?: 1,
+            )
+        }
 
     /** Frame index of mark [index]. */
     fun markFrame(index: Int): Int = clock.indexOfPts(sidecar.crossings[index].ptsUs)
@@ -129,3 +138,6 @@ class ReviewState(
         }
     }
 }
+
+/** One row of the acquisition list. */
+data class ReviewItem(val id: String, val name: String, val detail: String)

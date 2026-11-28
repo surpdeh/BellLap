@@ -1,13 +1,20 @@
 package net.belllap.core.model
 
-/** Finisher-mark edits for review (F19). Each returns a new [Sidecar]; added or moved marks are MANUAL, confidence 1. */
+/** Finisher-mark edits for review (F19). Each returns a new [Sidecar]; added or moved marks are MANUAL, 1.0. */
 
 fun Sidecar.withCrossingAdded(ptsUs: Long, frameIndex: Int): Sidecar =
     copy(crossings = (crossings + manual(ptsUs, frameIndex)).sortedBy { it.ptsUs })
 
 fun Sidecar.withCrossingMoved(index: Int, ptsUs: Long, frameIndex: Int): Sidecar {
     if (index !in crossings.indices) return this
-    return copy(crossings = crossings.filterIndexed { i, _ -> i != index }.plus(manual(ptsUs, frameIndex)).sortedBy { it.ptsUs })
+    return copy(
+        crossings = crossings.filterIndexed {
+                i,
+                _,
+            ->
+            i != index
+        }.plus(manual(ptsUs, frameIndex)).sortedBy { it.ptsUs },
+    )
 }
 
 fun Sidecar.withCrossingRemoved(index: Int): Sidecar {

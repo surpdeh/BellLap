@@ -8,8 +8,8 @@ import java.nio.file.StandardCopyOption
 data class Acquisition(val sidecar: Sidecar, val video: File)
 
 /**
- * The acquisitions in [dir] (`acq_<id>.mp4` plus `acq_<id>.json`), as written by F17 (F19). File-backed and pure JVM.
- * A sidecar that does not decode, or whose MP4 is missing, is left out of [list] and [load]; nothing here throws for it.
+ * The acquisitions in [dir] (`acq_<id>.mp4` plus `acq_<id>.json`), as written by F17 (F19). File-backed, pure JVM.
+ * A sidecar that does not decode, or whose MP4 is missing, is left out of [list] and [load]; nothing throws for it.
  */
 class AcquisitionStore(private val dir: File) {
     /** Newest first, by the sidecar's modification time. */
@@ -40,7 +40,12 @@ class AcquisitionStore(private val dir: File) {
         require(validId(sidecar.id)) { "Unsafe acquisition id" }
         val temp = File(dir, "acq_${sidecar.id}.json.tmp")
         temp.writeText(sidecar.encode())
-        Files.move(temp.toPath(), json(sidecar.id).toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+        Files.move(
+            temp.toPath(),
+            json(sidecar.id).toPath(),
+            StandardCopyOption.ATOMIC_MOVE,
+            StandardCopyOption.REPLACE_EXISTING,
+        )
     }
 
     private fun json(id: String) = File(dir, "acq_$id.json")
@@ -53,10 +58,10 @@ class AcquisitionStore(private val dir: File) {
         val sidecar = try {
             Sidecar.decode(file.readText())
         } catch (_: SidecarFormatException) {
-            return null
+            null
         } catch (_: java.io.IOException) {
-            return null
-        }
+            null
+        } ?: return null
         val video = File(dir, sidecar.videoFile)
         return if (validId(sidecar.id) && video.isFile) Acquisition(sidecar, video) else null
     }

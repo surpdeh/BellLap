@@ -20,7 +20,9 @@ class FrameClock(val fps: Int, val firstFramePtsUs: Long, val lastIndex: Int = I
     fun positionUs(index: Int): Long = (2L * index + 1) * US_PER_S / (2L * fps)
 
     /** The frame shown at player position [positionUs], clamped to the clip. */
-    fun indexAt(positionUs: Long): Int = (positionUs.coerceAtLeast(0) * fps / US_PER_S).coerceAtMost(lastIndex.toLong()).toInt()
+    fun indexAt(
+        positionUs: Long,
+    ): Int = (positionUs.coerceAtLeast(0) * fps / US_PER_S).coerceAtMost(lastIndex.toLong()).toInt()
 
     /** Player position for a camera-clock [ptsUs], never negative. */
     fun ptsToPosition(ptsUs: Long): Long = (ptsUs - firstFramePtsUs).coerceAtLeast(0)
@@ -40,6 +42,10 @@ class FrameClock(val fps: Int, val firstFramePtsUs: Long, val lastIndex: Int = I
 
         /** A clock for a clip of [durationUs]: its last frame is the last whole frame that fits. */
         fun forDuration(fps: Int, firstFramePtsUs: Long, durationUs: Long): FrameClock =
-            FrameClock(fps, firstFramePtsUs, (durationUs.coerceAtLeast(0) * fps / US_PER_S - 1).coerceAtLeast(0).toInt())
+            FrameClock(
+                fps,
+                firstFramePtsUs,
+                (durationUs.coerceAtLeast(0) * fps / US_PER_S - 1).coerceAtLeast(0).toInt(),
+            )
     }
 }
