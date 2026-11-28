@@ -20,7 +20,8 @@ find artifacts -type f \( -name '*.png' -o -name '*.gif' \) -size -8M | head -40
   cp "$f" "$WORK/ev/$DEST/$(echo "${f#artifacts/}" | tr '/' '_')"
 done
 # Small probe JSON (F25) is published too, because the workflow artifact zip is not reachable from every client.
-find artifacts -type f -name 'device-capabilities*.json' -size -1000k | head -10 | while read -r f; do
+# test-timings.json (emulator-e2e) is kept here too, so per-test durations can be compared across runs later.
+find artifacts -type f \( -name 'device-capabilities*.json' -o -name 'test-timings.json' \) -size -1000k | head -10 | while read -r f; do
   cp "$f" "$WORK/ev/$DEST/$(echo "${f#artifacts/}" | tr '/' '_')"
 done
 IMAGES=$(cd "$WORK/ev/$DEST" && ls 2>/dev/null | grep -E '\.(png|gif)$' || true)
@@ -46,7 +47,12 @@ RAW="https://github.com/${GITHUB_REPOSITORY}/blob/ci-evidence/${DEST}"
     echo "<details><summary>Bell metrics with YAMNet stage 1 (scripts/bell/replay-yamnet.sh)</summary>"
     echo; echo '```json'; grep -E '"(source|bellStage1|violations)"|bell\.' "$YAMNET" | head -c 6000; echo; echo '```'; echo "</details>"
   fi
+  TIMINGS=$(find artifacts -name test-timings.md | head -1)
+  if [ -n "$TIMINGS" ]; then
+    echo "<details><summary>Instrumented test timings</summary>"; echo; head -c 8000 "$TIMINGS"; echo; echo "</details>"
+  fi
   for j in $JSONS; do
+    case "$j" in *test-timings.json) continue ;; esac # shown above as a table; the JSON is linked from ci-evidence
     echo "<details><summary>${j} ([raw](${RAW}/${j}?raw=true))</summary>"
     echo; echo '```json'; head -c 12000 "$WORK/ev/$DEST/$j"; echo; echo '```'; echo "</details>"
   done

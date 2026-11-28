@@ -4,3 +4,5 @@
 # calls a Gradle task that is not listed here, or never reads a key that is.
 checks: lintDebug detekt testDebugUnitTest verifyRoborazziDebug assembleDebug
 replay: :testing:harness:replay
+# Built in the background by emulator-e2e while the emulator boots; connectedDebugAndroidTest then reuses them.
+apks: assembleDebug assembleDebugAndroidTest

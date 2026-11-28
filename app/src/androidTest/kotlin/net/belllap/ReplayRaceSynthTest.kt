@@ -1,5 +1,6 @@
 package net.belllap
 
+import android.os.SystemClock
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertTextEquals
@@ -50,7 +51,7 @@ class ReplayRaceSynthTest {
         composeRule.onNodeWithTag(ReplayTags.OPEN).performClick()
         composeRule.onNodeWithTag(ReplayTags.RUN_RACE_SYNTH).performClick()
 
-        awaitReplayFinished()
+        awaitReplayFinished("replaysRaceSynth")
         composeRule.onNodeWithTag(ReplayTags.STATE).assertTextEquals("SETUP")
         composeRule.waitForIdle()
         Thread.sleep(HOLD_MS)
@@ -78,7 +79,9 @@ class ReplayRaceSynthTest {
         TestEvidence.screenshot("12-journey-real-time-selected")
 
         composeRule.onNodeWithTag(ReplayTags.RUN_RACE_SYNTH).performClick()
+        val start = SystemClock.elapsedRealtime()
         composeRule.waitUntil(PREPARE_TIMEOUT_MS) { statusText() != ReplayController.PREPARING }
+        logTiming("journey", "prepare", start)
         for ((mode, shot) in listOf(
             "STANDBY" to "13-journey-standby",
             "ARMING" to "14-journey-arming-after-bell",
@@ -89,7 +92,8 @@ class ReplayRaceSynthTest {
             composeRule.waitForIdle()
             TestEvidence.screenshot(shot)
         }
-        awaitReplayFinished()
+        awaitReplayFinished("journey")
+        logTiming("journey", "total", start)
         composeRule.onNodeWithTag(ReplayTags.STATE).assertTextEquals("SETUP")
         composeRule.waitForIdle()
         Thread.sleep(HOLD_MS)
@@ -114,17 +118,29 @@ class ReplayRaceSynthTest {
     /**
      * Waits for Done or Failed. Preparing the media (generating and encoding race_synth on a cold cache) gets its
      * own budget, because on the CI emulator it alone has taken over two minutes. On a timeout, keeps a screenshot
-     * and reports what the screen said.
+     * and reports what the screen said. Logs how long each wait took under [name] (see [logTiming]).
      */
-    private fun awaitReplayFinished() {
+    private fun awaitReplayFinished(name: String) {
         try {
+            val start = SystemClock.elapsedRealtime()
             composeRule.waitUntil(PREPARE_TIMEOUT_MS) { statusText() != ReplayController.PREPARING }
+            val prepared = SystemClock.elapsedRealtime()
+            logTiming(name, "prepare_wait", start)
             composeRule.waitUntil(TIMEOUT_MS) { statusText().let { it.startsWith("Done") || it.startsWith("Failed") } }
+            logTiming(name, "replay", prepared)
         } catch (e: androidx.compose.ui.test.ComposeTimeoutException) {
             runCatching { TestEvidence.screenshot("replay-timeout") }
             throw AssertionError("Replay timed out. Status='${statusText()}' state='${textOf(ReplayTags.STATE)}'", e)
         }
         assertTrue("Replay did not complete: ${statusText()}", statusText().startsWith("Done"))
+    }
+
+    /**
+     * Logs `BellLapTiming: <test> <phase> <ms>ms` for scripts/ci/test-timings.py, which puts it in
+     * evidence/test-timings.json. Wall-clock test timing only; the app's own time base stays the frame PTS.
+     */
+    private fun logTiming(test: String, phase: String, sinceElapsedMs: Long) {
+        android.util.Log.i(TIMING_TAG, "$test $phase ${SystemClock.elapsedRealtime() - sinceElapsedMs}ms")
     }
 
     private fun statusText(): String = textOf(ReplayTags.STATUS)
@@ -148,6 +164,7 @@ class ReplayRaceSynthTest {
 
     private companion object {
         const val ASSET_DIR = "replay"
+        const val TIMING_TAG = "BellLapTiming"
         const val PREPARE_TIMEOUT_MS = 300_000L
         const val TIMEOUT_MS = 180_000L
         const val MODE_TIMEOUT_MS = 90_000L
