@@ -255,10 +255,11 @@ Detection and recording:
   - Metrics on fixtures.
   - Debug overlay showing the detection box.
   - Done: `:vision:flag` `ChequeredFlagDetector` (X-corner polarity, bimodal tiles, per-tile motion, 0.5 s onset and hold). The 15 s absence timeout stays in the state machine (`flagAbsentTimeoutMs`). The overlay is drawn by the harness (`flag-hit.png`, `flag-banner-rejected.png`); a live Compose overlay waits for the ARMED camera pipeline (F17). Tier 3 (a real flag on a phone) is still open.
-- [ ] **F17 Acquisition recording:** ([#17](https://github.com/surpdeh/belllap/issues/17))
+- [x] **F17 Acquisition recording:** ([#17](https://github.com/surpdeh/belllap/issues/17))
   - CameraX Recorder at 30/60 fps, one MP4 per acquisition, plus a sidecar JSON.
   - Auto-naming, and "Record now" / "Stop".
   - Free-storage guard.
+  - Done: `SessionController` now routes the machine's `StartRecording` and `StopRecording` effects (and flag visibility, as PTS intervals) to the `AcquisitionSink` interface (`:core:model`); `CameraXAcquisitionSink` (`:capture`) is the Android implementation and the unit tests use a fake. One CameraX `SessionConfig` of Preview, ImageAnalysis and VideoCapture is bound at the chosen fps. ARMING, ARMED and ACQUISITION bind it on a discarded surface (the screen stays black) and keep the screen on. Each acquisition writes `acq_<id>.mp4` and `acq_<id>.json` under `filesDir/acquisitions`, named "<date> Finish N" (`AcquisitionNaming`). The sidecar is the `@Serializable` `Sidecar` with a strict `decode` and `docs/sidecar.schema.json`, which `SidecarTest` validates against. `StorageGuard` refuses a start below five minutes of the estimated bitrate and the reason shows on the screen. ARMED has a "Record now" button. Crossings stay empty until F18, the MP4 has no audio, and `firstFramePtsUs` is the newest analysis-frame PTS when the recorder starts. `AcquisitionRecordingTest` runs on the CI emulator. Tier 3 (real 30/60 fps on a phone, bitrate estimates, `firstFramePtsUs` against the MP4) is still open.
 - [ ] **F18 Finish-crossing detection v1:** ([#18](https://github.com/surpdeh/belllap/issues/18))
   - Slit-scan along the line, with onset detection.
   - Live beep for each crossing.
