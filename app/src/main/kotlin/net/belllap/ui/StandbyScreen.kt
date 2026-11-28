@@ -35,6 +35,7 @@ private val NoticeRed = Color(0xFFFF8A80)
  * STANDBY and the modes after it until the camera screens exist (F13, F16, F17). Black, because the default
  * standby is dimmed and kept on. The big "Bell now" button arms by hand and is always there in STANDBY, and
  * "Record now" starts an acquisition by hand in ARMED (F17). [notice] shows why a recording did not start.
+ * [onReview] opens review (F19) beside the running session, in every mode.
  */
 @Composable
 fun StandbyScreen(
@@ -45,6 +46,7 @@ fun StandbyScreen(
     modifier: Modifier = Modifier,
     onRecordNow: () -> Unit = {},
     notice: String? = null,
+    onReview: (() -> Unit)? = null,
 ) {
     val inner = if (state is State.Review) state.underlying else state
     Box(
@@ -97,6 +99,12 @@ fun StandbyScreen(
                 modifier = Modifier.testTag(TestTags.BELL_STATUS),
             )
         }
+        Box(
+            Modifier
+                .align(Alignment.TopEnd)
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .padding(16.dp),
+        ) { ReviewButton(onReview) }
         OutlinedButton(
             onClick = onStop,
             modifier = Modifier

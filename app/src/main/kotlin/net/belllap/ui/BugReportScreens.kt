@@ -263,6 +263,12 @@ fun BugReportStatusScreen(
 
 /** The SetupScreen entry to the bug report; absent while no host is wired. */
 @Composable
+internal fun ReviewButton(onClick: (() -> Unit)?) {
+    if (onClick == null) return
+    Button(onClick = onClick, modifier = Modifier.testTag(TestTags.REVIEW_BUTTON)) { Text("Review") }
+}
+
+@Composable
 internal fun ReportProblemButton(onClick: (() -> Unit)?) {
     if (onClick == null) return
     Button(onClick = onClick, modifier = Modifier.testTag(TestTags.REPORT_BUTTON)) { Text("Report a problem") }

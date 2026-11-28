@@ -30,6 +30,7 @@ This plan applies from the first build. Its goal is that every PR, starting with
 - **Job `emulator-e2e`** runs an API 34 ATD x86_64 emulator with `-camera-back emulated`. It runs:
   - `connectedDebugAndroidTest`, which covers UI Automator/Compose flows;
   - `BugReportFlowTest` (F22), which drives the report form, consent and status screens against the in-process `:testing:fakebackend` and asserts the issue is filed;
+  - `ReviewPlayerTest` (F19), which opens the replay fixture MP4 in the review player, nudges a frame, jumps between finishers, pinch-zooms (and checks the zoom survives a step), edits marks and renames the recording;
   - the **Replay e2e**: fixture MP4/WAV goes through `VideoFileFrameSource`/`WavFileAudioSource`, the real service and the state machine, and the test asserts that the event log reads `BELL → ARMING → ARMED → FLAG → CROSSING×N → STOP` and that the MP4 and sidecar exist.
 - **Captured:** `adb screenrecord` of the flow (converted to GIF), screenshots at each state, logcat, and the JSONL event log.
 - **Published** to the `ci-evidence` branch, with one auto-updated PR comment that embeds them.

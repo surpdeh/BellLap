@@ -270,10 +270,11 @@ Detection and recording:
 
 Review and output:
 
-- [ ] **F19 Review player:** ([#19](https://github.com/surpdeh/belllap/issues/19))
+- [x] **F19 Review player:** ([#19](https://github.com/surpdeh/belllap/issues/19))
   - Acquisition list with rename and delete.
   - Exact seek, ±1 frame steps, previous/next finisher, pinch zoom and pan.
   - Add, move or delete finisher marks.
+  - Done: `:review` (Compose and Media3 ExoPlayer with `SeekParameters.EXACT`, opened paused) has `ReviewScreen`, the acquisition list (open, rename, delete) and the player. Logic is pure and unit tested: `FrameClock`, the mark edits `withCrossingAdded/Moved/Removed` (MANUAL, confidence 1, sorted by PTS) and `ZoomPan` in `:core:model`, the file-backed `AcquisitionStore` (atomic sidecar save) beside them, and `ReviewState` (current frame, selected mark, zoom) in `:review`. A seek goes to the middle of a frame's interval, so PTS jitter cannot land on the previous frame; the frame buttons, the previous/next finisher jump and the scrubber with finisher ticks all seek by PTS, and the zoom lives in `ReviewState`, so it survives stepping. A Review button on SETUP and on the STANDBY/ARMING/ARMED/ACQUISITION screen opens review beside the session; review touches no session state, camera or service, and the player pauses on stop and is released when closed. Edits save the sidecar at once; a refinement pass that finishes while a mark is being edited can still overwrite it (open). `ReviewPlayerTest` (androidTest, CI only) opens the replay fixture, nudges, zooms and edits. Tier 3 (real recordings on a phone, exact-seek frame accuracy against `firstFramePtsUs`) is still open.
 - [ ] **F20 Placings and notes:** ([#20](https://github.com/surpdeh/belllap/issues/20)) a free-text note per finisher, an ordered finish list per acquisition, and sharing the list as text.
 - [ ] **F21 Share frame:** ([#21](https://github.com/surpdeh/belllap/issues/21)) share the current frame, full or zoomed crop, as a PNG/JPEG through the share sheet using FileProvider.
 

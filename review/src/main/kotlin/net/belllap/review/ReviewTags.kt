@@ -1,0 +1,25 @@
+package net.belllap.review
+
+object ReviewTags {
+    const val LIST_SCREEN = "review_list_screen"
+    const val LIST_EMPTY = "review_list_empty"
+    const val ITEM_PREFIX = "review_item_"
+    const val RENAME_PREFIX = "review_rename_"
+    const val DELETE_PREFIX = "review_delete_"
+    const val NAME_FIELD = "review_name_field"
+    const val NAME_CONFIRM = "review_name_confirm"
+    const val DELETE_CONFIRM = "review_delete_confirm"
+    const val CLOSE = "review_close"
+    const val PLAYER_SCREEN = "review_player_screen"
+    const val ZOOM_AREA = "review_zoom_area"
+    const val FRAME_LABEL = "review_frame_label"
+    const val ZOOM_LABEL = "review_zoom_label"
+    const val SCRUBBER = "review_scrubber"
+    const val STEP_BACK = "review_step_back"
+    const val STEP_FORWARD = "review_step_forward"
+    const val PREVIOUS_FINISHER = "review_previous_finisher"
+    const val NEXT_FINISHER = "review_next_finisher"
+    const val ADD_MARK = "review_add_mark"
+    const val MOVE_MARK = "review_move_mark"
+    const val DELETE_MARK = "review_delete_mark"
+}
