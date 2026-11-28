@@ -68,6 +68,16 @@ data class Sidecar(
         }
     }
 
+    /**
+     * Merges the post-process refinement (F18): [refined] replaces every LIVE crossing, and MANUAL edits from review
+     * are kept. The refined list wins even when a live crossing has no match, since the refiner saw the whole file.
+     * Callers pass the result of a pass that ran; a failed decode must not call this.
+     */
+    fun withRefinedCrossings(refined: List<SidecarCrossing>): Sidecar {
+        val kept = crossings.filter { it.source == CrossingSource.MANUAL }
+        return copy(crossings = (kept + refined).sortedBy { it.ptsUs })
+    }
+
     fun encode(): String = STRICT_JSON.encodeToString(this)
 
     companion object {

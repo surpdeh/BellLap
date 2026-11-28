@@ -156,6 +156,13 @@ object PreviewSession {
     private var wanted: CompletableDeferred<Frame>? = null
 
     /**
+     * Receives a copy of every analysis frame (unrotated sensor luma, PTS = the camera timestamp in ns) while set,
+     * on the analysis thread. Frames are copied only while a listener is registered.
+     */
+    @Volatile
+    var frameListener: ((Frame) -> Unit)? = null
+
+    /**
      * The next camera frame as unrotated sensor luma, or null if none arrives within [timeoutMs] (camera not
      * bound). Frames are copied only while a caller is waiting, so the idle preview pays nothing for this.
      */
@@ -172,11 +179,15 @@ object PreviewSession {
     private fun onAnalysisFrame(image: ImageProxy) {
         image.use {
             latestPtsUs = it.imageInfo.timestamp / NANOS_PER_MICRO
-            val request = wanted ?: return
+            val request = wanted
+            val listener = frameListener
+            if (request == null && listener == null) return
             val plane = it.planes[0]
             val buffer = plane.buffer
             val luma = ByteArray(buffer.remaining()).also { out -> buffer.get(out) }
-            request.complete(Frame(it.imageInfo.timestamp, it.width, it.height, plane.rowStride, luma))
+            val frame = Frame(it.imageInfo.timestamp, it.width, it.height, plane.rowStride, luma)
+            request?.complete(frame)
+            listener?.invoke(frame)
         }
     }
 

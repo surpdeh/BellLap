@@ -38,6 +38,8 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             volumeUpAction = enumOrDefault(p[VOLUME_UP], d.volumeUpAction),
             volumeDownAction = enumOrDefault(p[VOLUME_DOWN], d.volumeDownAction),
             finishLine = p[FINISH_LINE]?.let(FinishLine::fromSidecarJson),
+            allowScreenLock = p[ALLOW_SCREEN_LOCK] ?: d.allowScreenLock,
+            screenLockTestedDevice = p[SCREEN_LOCK_TESTED],
         )
     }
 
@@ -58,6 +60,9 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         if (v == null) p.remove(ALERT_VOLUME) else p[ALERT_VOLUME] = v
         val line = s.finishLine
         if (line == null) p.remove(FINISH_LINE) else p[FINISH_LINE] = line.toSidecarJson()
+        p[ALLOW_SCREEN_LOCK] = s.allowScreenLock
+        val tested = s.screenLockTestedDevice
+        if (tested == null) p.remove(SCREEN_LOCK_TESTED) else p[SCREEN_LOCK_TESTED] = tested
     }
 
     private inline fun <reified E : Enum<E>> enumOrDefault(name: String?, default: E): E =
@@ -78,5 +83,7 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         val VOLUME_UP = stringPreferencesKey("volume_up_action")
         val VOLUME_DOWN = stringPreferencesKey("volume_down_action")
         val FINISH_LINE = stringPreferencesKey("finish_line")
+        val ALLOW_SCREEN_LOCK = booleanPreferencesKey("allow_screen_lock")
+        val SCREEN_LOCK_TESTED = stringPreferencesKey("screen_lock_tested_device")
     }
 }

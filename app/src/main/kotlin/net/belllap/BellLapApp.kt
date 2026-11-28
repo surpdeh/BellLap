@@ -2,6 +2,7 @@ package net.belllap
 
 import android.app.Application
 import android.os.Build
+import android.os.PowerManager
 import android.os.SystemClock
 import androidx.core.content.edit
 import kotlinx.coroutines.Dispatchers
@@ -21,16 +22,23 @@ import net.belllap.bugreport.NotConfiguredAppCheck
 import net.belllap.bugreport.ReportWorker
 import net.belllap.capture.CameraXAcquisitionSink
 import net.belllap.capture.DeviceProbe
+import net.belllap.capture.MediaCodecVideoDecoder
 import net.belllap.core.log.AndroidInfo
 import net.belllap.core.log.EventLog
 import net.belllap.core.log.RollingFileTree
 import net.belllap.core.model.DeviceCapabilities
+import net.belllap.core.model.ScreenLockSelfTest
+import net.belllap.core.model.SelfTestVerdict
+import net.belllap.core.model.SavedAcquisition
 import net.belllap.core.model.SidecarDevice
 import net.belllap.core.service.AlarmBeepPlayer
 import net.belllap.core.service.SessionHost
 import net.belllap.core.service.SessionHostProvider
+import net.belllap.session.CrossingRefinement
 import net.belllap.session.EventLogSessionLog
+import net.belllap.session.HeadlessCamera
 import net.belllap.session.SessionController
+import net.belllap.settings.SettingsRepository
 import timber.log.Timber
 import java.io.File
 import java.time.LocalDate
@@ -52,6 +60,32 @@ class BellLapApp : Application(), SessionHostProvider {
     private fun appCheck(): AppCheckTokenSource = BuildConfig.FIREBASE_API_KEY.takeIf { it.isNotEmpty() }
         ?.let { FirebaseAppCheckTokenSource(this, it) } ?: NotConfiguredAppCheck
 
+    /** Whether MainActivity is started (on screen). The headless camera (F33) takes over while it is not. */
+    val activityVisible = MutableStateFlow(false)
+
+    /** Identifies this phone and OS build for the F33 self-test result. */
+    val deviceId: String by lazy {
+        ScreenLockSelfTest.deviceId(Build.MANUFACTURER, Build.MODEL, Build.VERSION.SDK_INT, Build.FINGERPRINT)
+    }
+
+    private val acquisitionSink by lazy {
+        CameraXAcquisitionSink(this, File(filesDir, "acquisitions")).also { sink ->
+            // The recorder finalizes the MP4 after stop() returns; the refinement pass (F18) starts from there.
+            sink.onSaved = { saved -> MainScope().launch(Dispatchers.Default) { refine(saved) } }
+        }
+    }
+
+    private fun refine(saved: SavedAcquisition) {
+        try {
+            val result = CrossingRefinement(MediaCodecVideoDecoder()).refine(saved)
+            Timber.i("Crossing refinement of %s: %s", saved.id, result?.crossings?.size ?: "skipped")
+        } catch (
+            @Suppress("TooGenericExceptionCaught") e: Exception,
+        ) {
+            Timber.w(e, "Crossing refinement of %s failed; the live crossings stay", saved.id)
+        }
+    }
+
     /** The session lives as long as the process; the foreground service keeps the process alive. */
     val session: SessionController by lazy {
         SessionController(
@@ -64,12 +98,28 @@ class BellLapApp : Application(), SessionHostProvider {
             classifier = { bellClassifier },
             log = EventLogSessionLog(eventLog),
             beeps = AlarmBeepPlayer(this) { session.alertVolumePercent },
-            sink = CameraXAcquisitionSink(this, File(filesDir, "acquisitions")),
+            sink = acquisitionSink,
             device = SidecarDevice(Build.MANUFACTURER, Build.MODEL, Build.VERSION.SDK_INT),
             appVersion = BuildConfig.VERSION_NAME,
             eventLabel = { LocalDate.now().toString() },
             audioDispatcher = Dispatchers.IO,
+            screenOn = { getSystemService(PowerManager::class.java).isInteractive },
+            onSelfTestVerdict = ::saveSelfTestVerdict,
         )
+    }
+
+    /** A pass unlocks the screen-lock option for this device only; a failure switches it off. */
+    private fun saveSelfTestVerdict(verdict: SelfTestVerdict) {
+        Timber.i("Screen-lock self-test: %s", verdict)
+        val passed = verdict == SelfTestVerdict.Passed
+        MainScope().launch {
+            SettingsRepository(settingsStore).update {
+                it.copy(
+                    screenLockTestedDevice = if (passed) deviceId else null,
+                    allowScreenLock = it.allowScreenLock && passed,
+                )
+            }
+        }
     }
 
     override val sessionHost: SessionHost get() = session
@@ -79,6 +129,7 @@ class BellLapApp : Application(), SessionHostProvider {
         val logsDir = File(filesDir, "logs")
         Timber.plant(RollingFileTree(logsDir))
         eventLog = EventLog(logsDir)
+        HeadlessCamera(this, MainScope(), session, activityVisible, deviceId).start()
         eventLog.log(AndroidInfo.device(BuildConfig.VERSION_NAME))
         AndroidInfo.battery(this)?.let(eventLog::log)
         val prefs = getSharedPreferences("eventlog", MODE_PRIVATE)

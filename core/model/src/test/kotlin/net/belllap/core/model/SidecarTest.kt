@@ -64,6 +64,17 @@ class SidecarTest {
     }
 
     @Test
+    fun refinedCrossingsReplaceLiveOnesAndKeepManualEdits() {
+        val live = SidecarCrossing(2_000L, 2, 0.9f, CrossingSource.LIVE)
+        val manual = SidecarCrossing(5_000L, 5, 1f, CrossingSource.MANUAL)
+        val refined = SidecarCrossing(1_900L, 2, 0.8f, CrossingSource.REFINED)
+        val merged = sample.copy(crossings = listOf(live, manual)).withRefinedCrossings(listOf(refined))
+        assertEquals(listOf(refined, manual), merged.crossings)
+        val cleared = sample.copy(crossings = listOf(live)).withRefinedCrossings(emptyList())
+        assertEquals(emptyList<SidecarCrossing>(), cleared.crossings)
+    }
+
+    @Test
     fun validateFlagsBackwardsFlagIntervals() {
         assertEquals(emptyList<String>(), sample.validate())
         assertEquals(1, sample.copy(flagIntervals = listOf(FlagInterval(5, 1))).validate().size)
