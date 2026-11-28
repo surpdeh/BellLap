@@ -80,6 +80,7 @@ class SessionController(
     private val machine = SessionMachine(nowMs = nowMs())
     private val mutableState = MutableStateFlow<State>(machine.state)
     private val mutableBell = MutableStateFlow(BellStatus())
+
     /** The settings last passed to [updateSettings]. */
     var settings = CaptureSettings()
         private set
@@ -273,6 +274,7 @@ fun CaptureSettings.allows(cue: Cue): Boolean = when (cue) {
 }
 
 private const val MAX_VOLUME_PERCENT = 100
+
 /** The camera is bound from ARMING on, so it is ready when the flag is seen or "Record now" is pressed (F17). */
 fun cameraNeeded(state: State): Boolean =
     (if (state is State.Review) state.underlying else state).let {

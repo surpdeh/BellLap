@@ -44,9 +44,9 @@ import net.belllap.core.model.VolumeKey
 import net.belllap.core.service.SessionForegroundService
 import net.belllap.core.service.dimmedStandby
 import net.belllap.core.statemachine.State
-import net.belllap.session.volumeKey
 import net.belllap.debug.DebugEntry
 import net.belllap.session.cameraNeeded
+import net.belllap.session.volumeKey
 import net.belllap.settings.SettingsRepository
 import net.belllap.ui.CameraPreview
 import net.belllap.ui.OEM_TIPS_URL
@@ -114,6 +114,7 @@ class MainActivity : ComponentActivity() {
         val key = volumeKeyOf(keyCode) ?: return super.onKeyUp(keyCode, event)
         return (application as BellLapApp).session.volumeKey(key, down = false) || super.onKeyUp(keyCode, event)
     }
+
     /** ARMING, ARMED and ACQUISITION keep the screen on: the camera is bound to this activity's lifecycle. */
     private fun applyKeepOn(keepOn: Boolean) {
         if (keepOn) {

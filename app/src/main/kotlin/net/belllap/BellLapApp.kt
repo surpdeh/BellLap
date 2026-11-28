@@ -20,8 +20,8 @@ import net.belllap.core.log.AndroidInfo
 import net.belllap.core.log.EventLog
 import net.belllap.core.log.RollingFileTree
 import net.belllap.core.model.DeviceCapabilities
-import net.belllap.core.service.AlarmBeepPlayer
 import net.belllap.core.model.SidecarDevice
+import net.belllap.core.service.AlarmBeepPlayer
 import net.belllap.core.service.SessionHost
 import net.belllap.core.service.SessionHostProvider
 import net.belllap.session.EventLogSessionLog
