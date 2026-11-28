@@ -18,12 +18,14 @@ import net.belllap.core.log.AndroidInfo
 import net.belllap.core.log.EventLog
 import net.belllap.core.log.RollingFileTree
 import net.belllap.core.model.DeviceCapabilities
+import net.belllap.core.service.SessionHost
+import net.belllap.core.service.SessionHostProvider
 import net.belllap.session.EventLogSessionLog
 import net.belllap.session.SessionController
 import timber.log.Timber
 import java.io.File
 
-class BellLapApp : Application() {
+class BellLapApp : Application(), SessionHostProvider {
     lateinit var eventLog: EventLog
         private set
 
@@ -35,7 +37,7 @@ class BellLapApp : Application() {
     /** Stage 1 of the bell cascade, loaded once (it maps a 4 MB model). Shared by the session and Replay. */
     val bellClassifier: BellClassifier by lazy { YamnetBellClassifier.loadOrFallback(this) }
 
-    /** The session lives as long as the process for now; F13 moves it into the foreground service. */
+    /** The session lives as long as the process; the foreground service keeps the process alive. */
     val session: SessionController by lazy {
         SessionController(
             scope = MainScope(),
@@ -49,6 +51,8 @@ class BellLapApp : Application() {
             audioDispatcher = Dispatchers.IO,
         )
     }
+
+    override val sessionHost: SessionHost get() = session
 
     override fun onCreate() {
         super.onCreate()
