@@ -60,6 +60,7 @@ fun SetupScreen(
     onStandby: () -> Unit = {},
     onDetectLine: () -> Unit = {},
     onReportProblem: (() -> Unit)? = null,
+    onReview: (() -> Unit)? = null,
     detectMessage: String? = null,
     mode: String = "SETUP",
     facings: Set<CameraFacing>? = null,
@@ -126,6 +127,7 @@ fun SetupScreen(
                         },
                         modifier = Modifier.testTag(TestTags.DETECT_BUTTON),
                     ) { Text("Detect line") }
+                    ReviewButton(onReview)
                     ReportProblemButton(onReportProblem)
                     detectMessage?.let {
                         Text(

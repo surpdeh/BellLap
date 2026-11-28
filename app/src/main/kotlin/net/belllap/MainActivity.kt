@@ -47,6 +47,7 @@ import net.belllap.bugreport.ReportWorker
 import net.belllap.bugreport.listCapturedVideos
 import net.belllap.capture.CameraUnavailableException
 import net.belllap.capture.PreviewSession
+import net.belllap.core.model.AcquisitionStore
 import net.belllap.core.model.CameraCapabilities
 import net.belllap.core.model.CaptureSettings
 import net.belllap.core.model.PreviewMapping
@@ -55,6 +56,7 @@ import net.belllap.core.service.SessionForegroundService
 import net.belllap.core.service.dimmedStandby
 import net.belllap.core.statemachine.State
 import net.belllap.debug.DebugEntry
+import net.belllap.review.ReviewScreen
 import net.belllap.session.cameraNeeded
 import net.belllap.session.volumeKey
 import net.belllap.settings.SettingsRepository
@@ -210,6 +212,7 @@ class MainActivity : ComponentActivity() {
                 var detectMessage by remember { mutableStateOf<String?>(null) }
                 var settingsOpen by rememberSaveable { mutableStateOf(false) }
                 var reportOpen by rememberSaveable { mutableStateOf(false) }
+                var reviewOpen by rememberSaveable { mutableStateOf(false) }
                 var asked by rememberSaveable { mutableStateOf(false) }
                 var granted by remember { mutableStateOf(allGranted()) }
                 var rationale by remember { mutableStateOf(shouldShowRationale()) }
@@ -224,14 +227,22 @@ class MainActivity : ComponentActivity() {
                     BugReport(granted) { reportOpen = false }
                 } else if (state != State.Setup && granted) {
                     if (cameraNeeded(state)) HiddenCamera(settings, app.activityVisible)
-                    StandbyScreen(
-                        state,
-                        bell,
-                        onBellNow = session::bellNow,
-                        onStop = session::stop,
-                        onRecordNow = session::recordNow,
-                        notice = notice,
-                    )
+                    // Review runs beside the session; the camera stays bound above while it shows.
+                    if (reviewOpen) {
+                        Review { reviewOpen = false }
+                    } else {
+                        StandbyScreen(
+                            state,
+                            bell,
+                            onBellNow = session::bellNow,
+                            onStop = session::stop,
+                            onRecordNow = session::recordNow,
+                            notice = notice,
+                            onReview = { reviewOpen = true },
+                        )
+                    }
+                } else if (reviewOpen) {
+                    Review { reviewOpen = false }
                 } else {
                     Box {
                         SetupScreen(
@@ -258,6 +269,7 @@ class MainActivity : ComponentActivity() {
                             onDetectLine = { scope.launch { detectMessage = detectAndStoreLine(repo) } },
                             onOpenSystemSettings = ::openAppSettings,
                             onReportProblem = { reportOpen = true },
+                            onReview = { reviewOpen = true },
                             preview = {
                                 CameraPreview(settings, onMapping = { mapping = it }) { caps ->
                                     capabilities = caps
@@ -271,6 +283,12 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    @Composable
+    private fun Review(onClose: () -> Unit) {
+        val store = remember { AcquisitionStore(File(filesDir, "acquisitions")) }
+        ReviewScreen(store, onClose)
     }
 
     @Composable

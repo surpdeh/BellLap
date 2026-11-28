@@ -86,6 +86,7 @@ dependencies {
     implementation(project(":audio:android"))
     implementation(project(":capture"))
     implementation(project(":bugreport"))
+    implementation(project(":review"))
     implementation(project(":core:service"))
     implementation(project(":vision:finishline"))
     implementation(libs.androidx.camera.compose)

@@ -41,6 +41,7 @@ object TestTags {
     const val STEP_BATTERY = "step_battery"
     const val OEM_TIPS_BUTTON = "oem_tips_button"
     const val REPORT_BUTTON = "report_button"
+    const val REVIEW_BUTTON = "review_button"
     const val BUG_FORM_SCREEN = "bug_form_screen"
     const val BUG_DESCRIPTION = "bug_description"
     const val BUG_BELL_RECORD = "bug_bell_record"
