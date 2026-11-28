@@ -12,6 +12,7 @@ import net.belllap.core.model.FinishLine
 import net.belllap.core.model.Fps
 import net.belllap.core.model.NormPoint
 import net.belllap.core.model.Resolution
+import net.belllap.core.model.VolumeKeyAction
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -44,6 +45,8 @@ class SettingsRepositoryTest {
             standDownChime = false,
             flagTimeoutSeconds = 120,
             alertVolumePercent = 70,
+            volumeUpAction = VolumeKeyAction.ARM,
+            volumeDownAction = VolumeKeyAction.RECORD,
             finishLine = FinishLine(NormPoint(0.4f, 0.1f), NormPoint(0.6f, 0.9f)),
         )
         val first = store("a.preferences_pb")

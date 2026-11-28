@@ -1,0 +1,6 @@
+# The Gradle tasks CI runs. One line per Gradle call in .github/workflows/ci.yml, as `<key>: <tasks>`.
+# ci.yml reads each line with `gradle_tasks <key>` (scripts/ci/lib.sh), and tier1.sh runs every line,
+# so a task added here runs in both. ci_parity (run by precheck.sh and tier1.sh) fails if ci.yml
+# calls a Gradle task that is not listed here, or never reads a key that is.
+checks: lintDebug detekt testDebugUnitTest verifyRoborazziDebug assembleDebug
+replay: :testing:harness:replay

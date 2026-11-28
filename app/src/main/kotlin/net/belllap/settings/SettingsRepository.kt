@@ -35,6 +35,8 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             standDownChime = p[STAND_DOWN] ?: d.standDownChime,
             flagTimeoutSeconds = timeout ?: d.flagTimeoutSeconds,
             alertVolumePercent = volume,
+            volumeUpAction = enumOrDefault(p[VOLUME_UP], d.volumeUpAction),
+            volumeDownAction = enumOrDefault(p[VOLUME_DOWN], d.volumeDownAction),
             finishLine = p[FINISH_LINE]?.let(FinishLine::fromSidecarJson),
         )
     }
@@ -50,6 +52,8 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         p[BEEPS] = s.crossingBeeps
         p[STAND_DOWN] = s.standDownChime
         p[FLAG_TIMEOUT] = s.flagTimeoutSeconds
+        p[VOLUME_UP] = s.volumeUpAction.name
+        p[VOLUME_DOWN] = s.volumeDownAction.name
         val v = s.alertVolumePercent
         if (v == null) p.remove(ALERT_VOLUME) else p[ALERT_VOLUME] = v
         val line = s.finishLine
@@ -71,6 +75,8 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         val STAND_DOWN = booleanPreferencesKey("stand_down_chime")
         val FLAG_TIMEOUT = intPreferencesKey("flag_timeout_s")
         val ALERT_VOLUME = intPreferencesKey("alert_volume_pct")
+        val VOLUME_UP = stringPreferencesKey("volume_up_action")
+        val VOLUME_DOWN = stringPreferencesKey("volume_down_action")
         val FINISH_LINE = stringPreferencesKey("finish_line")
     }
 }

@@ -63,7 +63,9 @@ class SessionController(
     private val machine = SessionMachine(nowMs = nowMs())
     private val mutableState = MutableStateFlow<State>(machine.state)
     private val mutableBell = MutableStateFlow(BellStatus())
-    private var settings = CaptureSettings()
+    /** The settings last passed to [updateSettings]. */
+    var settings = CaptureSettings()
+        private set
     private var timer: Job? = null
     private var listener: Job? = null
 

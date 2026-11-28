@@ -18,6 +18,8 @@ import net.belllap.audio.source.AudioSource
 import net.belllap.audio.source.PcmAudioSource
 import net.belllap.audio.source.PcmChunk
 import net.belllap.core.model.CaptureSettings
+import net.belllap.core.model.VolumeKey
+import net.belllap.core.model.VolumeKeyAction
 import net.belllap.core.statemachine.Cue
 import net.belllap.core.statemachine.Event
 import net.belllap.core.statemachine.FakeBeepSink
@@ -127,6 +129,43 @@ class SessionControllerTest {
         assertTrue(c.bell.value.listening)
         withTimeout(5_000) { while (opened == 0) Thread.sleep(5) }
         assertEquals(1, opened)
+    }
+
+    @Test
+    fun volumeKeysAreIgnoredInSetupAndWhenUnmapped() = runBlocking {
+        val c = controller(silence)
+        c.updateSettings(CaptureSettings(bellAutomation = false, volumeUpAction = VolumeKeyAction.ARM))
+        assertFalse("SETUP leaves the key to the system", c.volumeKey(VolumeKey.UP))
+        assertEquals(State.Setup, c.state.value)
+        c.standby()
+        assertFalse("unmapped key is not swallowed", c.volumeKey(VolumeKey.DOWN))
+        assertEquals(State.Standby, c.state.value)
+    }
+
+    @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun mappedVolumeKeysArmThenRecord() = runTest {
+        val c = controller(silence, scope = backgroundScope, nowMs = { testScheduler.currentTime })
+        c.updateSettings(
+            CaptureSettings(
+                bellAutomation = false,
+                volumeUpAction = VolumeKeyAction.ARM,
+                volumeDownAction = VolumeKeyAction.RECORD,
+            ),
+        )
+        c.standby()
+        assertTrue(c.volumeKey(VolumeKey.UP, repeat = true))
+        assertEquals("a held key does nothing", State.Standby, c.state.value)
+        assertTrue(c.volumeKey(VolumeKey.UP))
+        assertEquals(State.Arming, c.state.value)
+        assertTrue(transitions.last().endsWith("(volume_up:BellNow)"))
+        assertTrue(c.volumeKey(VolumeKey.DOWN))
+        assertEquals("record is ignored until armed", State.Arming, c.state.value)
+        advanceTimeBy(ARM_DELAY_MS)
+        runCurrent()
+        assertTrue(c.volumeKey(VolumeKey.DOWN))
+        assertEquals(State.Acquisition(flagVisible = false), c.state.value)
+        assertTrue(transitions.last().endsWith("(volume_down:RecordNow)"))
     }
 
     /** Runs a full session on virtual time and returns the cues the sink heard. */

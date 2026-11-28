@@ -13,6 +13,12 @@ enum class Resolution(val width: Int, val height: Int) {
 /** How eagerly the bell detector (F14) fires. LOW wants a longer, clearer ring; HIGH fires on fainter bells. */
 enum class BellSensitivity { LOW, MEDIUM, HIGH }
 
+/** A hardware volume key. */
+enum class VolumeKey { UP, DOWN }
+
+/** What a volume key does while the app is in the foreground (F38). OFF leaves the key to the system. */
+enum class VolumeKeyAction { OFF, ARM, RECORD }
+
 @Suppress("MagicNumber")
 enum class Fps(val value: Int) { FPS_30(30), FPS_60(60) }
 
@@ -32,6 +38,9 @@ data class CaptureSettings(
     val flagTimeoutSeconds: Int = DEFAULT_FLAG_TIMEOUT_S,
     /** Alert-stream volume 0..100 for the cues, or null for the maximum. The previous level is restored after. */
     val alertVolumePercent: Int? = null,
+    /** Volume-up key shortcut (F38). Off by default so the key keeps its system behaviour. */
+    val volumeUpAction: VolumeKeyAction = VolumeKeyAction.OFF,
+    val volumeDownAction: VolumeKeyAction = VolumeKeyAction.OFF,
     /** The finish line in normalised sensor coordinates (F11), or null when not drawn yet. */
     val finishLine: FinishLine? = null,
 ) {
@@ -40,6 +49,11 @@ data class CaptureSettings(
         require(
             alertVolumePercent == null || alertVolumePercent in VOLUME_RANGE_PCT,
         ) { "alertVolumePercent out of range" }
+    }
+
+    fun actionFor(key: VolumeKey): VolumeKeyAction = when (key) {
+        VolumeKey.UP -> volumeUpAction
+        VolumeKey.DOWN -> volumeDownAction
     }
 
     /** Returns these settings with resolution and fps replaced by the nearest option [caps] supports. */

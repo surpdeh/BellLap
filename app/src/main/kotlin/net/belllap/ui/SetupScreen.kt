@@ -40,6 +40,7 @@ import net.belllap.core.model.FinishLine
 import net.belllap.core.model.Fps
 import net.belllap.core.model.PreviewMapping
 import net.belllap.core.model.Resolution
+import net.belllap.core.model.VolumeKeyAction
 
 @Composable
 fun SetupScreen(
@@ -293,6 +294,13 @@ fun SettingsOverlay(
             ToggleRow("Crossing beeps", settings.crossingBeeps, TestTags.TOGGLE_BEEPS) {
                 onChange(settings.copy(crossingBeeps = it))
             }
+            Label("Volume keys (while running)")
+            Chips(VolumeKeyAction.entries, settings.volumeUpAction, { "Up: ${volumeActionLabel(it)}" }, { true }) {
+                onChange(settings.copy(volumeUpAction = it))
+            }
+            Chips(VolumeKeyAction.entries, settings.volumeDownAction, { "Down: ${volumeActionLabel(it)}" }, { true }) {
+                onChange(settings.copy(volumeDownAction = it))
+            }
             ToggleRow("Stand-down chime", settings.standDownChime, TestTags.TOGGLE_STAND_DOWN_CHIME) {
                 onChange(settings.copy(standDownChime = it))
             }
@@ -321,6 +329,12 @@ fun SettingsOverlay(
 }
 
 private const val DEFAULT_OVERRIDE_VOLUME = 80
+
+fun volumeActionLabel(a: VolumeKeyAction): String = when (a) {
+    VolumeKeyAction.OFF -> "Off"
+    VolumeKeyAction.ARM -> "Arm"
+    VolumeKeyAction.RECORD -> "Record"
+}
 
 fun sensitivityLabel(s: BellSensitivity): String = when (s) {
     BellSensitivity.LOW -> "Low"
