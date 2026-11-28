@@ -1,6 +1,7 @@
 package net.belllap
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -26,6 +27,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -78,6 +80,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    @SuppressLint("BatteryLife")
     @Composable
     private fun Onboarding(granted: Boolean, requestCameraMic: () -> Unit, onDone: () -> Unit) {
         var notifications by remember { mutableStateOf(notificationsGranted()) }
@@ -100,7 +103,7 @@ class MainActivity : ComponentActivity() {
                 val uri = Uri.fromParts("package", packageName, null)
                 batteryLauncher.launch(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, uri))
             },
-            onOpenOemTips = { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(OEM_TIPS_URL))) },
+            onOpenOemTips = { startActivity(Intent(Intent.ACTION_VIEW, OEM_TIPS_URL.toUri())) },
             onContinue = onDone,
         )
     }

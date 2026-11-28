@@ -92,15 +92,20 @@ class SessionForegroundService : Service() {
         ServiceCompat.startForeground(this, NOTIFICATION_ID, buildNotification(s), type)
     }
 
-    @SuppressLint("WakelockTimeout")
+    // The lock spans state changes, so it is acquired and released in different calls; onDestroy always releases it.
+    @SuppressLint("WakelockTimeout", "Wakelock")
     private fun updateWakeLock(required: Boolean) {
-        val held = wakeLock?.isHeld == true
+        val lock = wakeLock
+        val held = lock?.isHeld == true
         if (required && !held) {
             val pm = getSystemService(PowerManager::class.java)
-            wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "BellLap:session").apply { acquire() }
+            wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "BellLap:session").also { it.acquire() }
         } else if (!required && held) {
-            wakeLock?.release()
-            wakeLock = null
+            try {
+                lock.release()
+            } finally {
+                wakeLock = null
+            }
         }
     }
 
