@@ -14,6 +14,9 @@ import net.belllap.audio.android.AudioRecordPcmRecorder
 import net.belllap.audio.android.YamnetBellClassifier
 import net.belllap.audio.bell.BellClassifier
 import net.belllap.audio.source.MicAudioSource
+import net.belllap.bugreport.BugReports
+import net.belllap.bugreport.NotConfiguredAppCheck
+import net.belllap.bugreport.ReportWorker
 import net.belllap.capture.CameraXAcquisitionSink
 import net.belllap.capture.DeviceProbe
 import net.belllap.core.log.AndroidInfo
@@ -41,6 +44,8 @@ class BellLapApp : Application(), SessionHostProvider {
 
     /** Stage 1 of the bell cascade, loaded once (it maps a 4 MB model). Shared by the session and Replay. */
     val bellClassifier: BellClassifier by lazy { YamnetBellClassifier.loadOrFallback(this) }
+
+    val bugReports: BugReports by lazy { BugReports(this, NotConfiguredAppCheck) }
 
     /** The session lives as long as the process; the foreground service keeps the process alive. */
     val session: SessionController by lazy {
@@ -74,6 +79,9 @@ class BellLapApp : Application(), SessionHostProvider {
         val prefs = getSharedPreferences("eventlog", MODE_PRIVATE)
         val newest = AndroidInfo.recordExitInfo(this, eventLog, prefs.getLong(KEY_LAST_EXIT, 0L))
         prefs.edit { putLong(KEY_LAST_EXIT, newest) }
+        MainScope().launch(Dispatchers.IO) {
+            if (bugReports.configured && bugReports.queue.hasWork) ReportWorker.schedule(this@BellLapApp)
+        }
         // The JSON sits beside the event logs, so a bug report bundling the logs directory includes it.
         MainScope().launch(Dispatchers.IO) {
             runCatching { DeviceProbe.writeJson(this@BellLapApp, logsDir) }

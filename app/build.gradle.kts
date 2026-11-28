@@ -13,6 +13,13 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // F22: where bug reports go. Empty (the default) disables Send; set both in ~/.gradle/gradle.properties.
+        buildConfigField("String", "REPORTS_URL", "\"${providers.gradleProperty("belllap.reportsUrl").getOrElse("")}\"")
+        buildConfigField(
+            "String",
+            "FIREBASE_API_KEY",
+            "\"${providers.gradleProperty("belllap.firebaseApiKey").getOrElse("")}\"",
+        )
     }
 
     buildTypes {
@@ -78,10 +85,12 @@ dependencies {
     implementation(project(":core:statemachine"))
     implementation(project(":audio:android"))
     implementation(project(":capture"))
+    implementation(project(":bugreport"))
     implementation(project(":core:service"))
     implementation(project(":vision:finishline"))
     implementation(libs.androidx.camera.compose)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.work.runtime.ktx)
     debugImplementation(project(":core:replay"))
     debugImplementation(project(":vision:flag"))
     debugImplementation(project(":testing:fixtures"))
@@ -108,5 +117,6 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(project(":core:log"))
+    androidTestImplementation(project(":testing:fakebackend"))
     fixtureTool(project(":testing:fixtures"))
 }
