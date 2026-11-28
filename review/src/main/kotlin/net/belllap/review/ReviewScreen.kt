@@ -2,6 +2,7 @@ package net.belllap.review
 
 import android.content.Context
 import androidx.activity.compose.BackHandler
+import androidx.annotation.OptIn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -18,6 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.media3.common.C
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.compose.ContentFrame
 import androidx.media3.ui.compose.SURFACE_TYPE_TEXTURE_VIEW
 import kotlinx.coroutines.CoroutineDispatcher
@@ -75,6 +77,7 @@ fun ReviewScreen(store: AcquisitionStore, onClose: () -> Unit, modifier: Modifie
     }
 }
 
+@OptIn(UnstableApi::class)
 @Composable
 private fun ReviewPlayerHost(
     acquisition: Acquisition,

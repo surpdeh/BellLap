@@ -2,12 +2,14 @@ package net.belllap.review
 
 import android.content.Context
 import android.net.Uri
+import androidx.annotation.OptIn
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.setValue
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.SeekParameters
 import java.io.File
@@ -16,6 +18,7 @@ import java.io.File
  * Media3 ExoPlayer for one acquisition MP4 (F19). It seeks exactly ([SeekParameters.EXACT]) and opens paused. It owns
  * no camera, audio capture or service, so it runs beside an ARMED session; call [release] when done.
  */
+@OptIn(UnstableApi::class) // androidx.annotation.OptIn: the lint marker for Media3's unstable API
 class ReviewPlayer(context: Context, video: File) {
     val exo: ExoPlayer = ExoPlayer.Builder(context).build().apply {
         setSeekParameters(SeekParameters.EXACT)
