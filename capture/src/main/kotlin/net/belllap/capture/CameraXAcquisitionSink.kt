@@ -9,6 +9,7 @@ import androidx.camera.video.VideoRecordEvent
 import androidx.core.content.ContextCompat
 import net.belllap.core.model.AcquisitionSink
 import net.belllap.core.model.RecordingUnavailableException
+import net.belllap.core.model.SavedAcquisition
 import net.belllap.core.model.Sidecar
 import net.belllap.core.model.SidecarFormatException
 import java.io.File
@@ -23,6 +24,8 @@ private const val TAG = "BellLapRecorder"
  */
 class CameraXAcquisitionSink(private val context: Context, private val dir: File) : AcquisitionSink {
     private var recording: Recording? = null
+
+    override var onSaved: ((SavedAcquisition) -> Unit)? = null
 
     /** Space the system would let this app allocate, counting clearable caches; usable space if that fails. */
     override fun freeBytes(): Long {
@@ -57,11 +60,16 @@ class CameraXAcquisitionSink(private val context: Context, private val dir: File
                 "Cannot create the recordings folder.",
             )
         }
-        val options = FileOutputOptions.Builder(File(dir, "acq_$id.mp4")).build()
+        val mp4 = File(dir, "acq_$id.mp4")
+        val options = FileOutputOptions.Builder(mp4).build()
         recording = video.output.prepareRecording(context, options)
             .start(ContextCompat.getMainExecutor(context)) { event ->
-                if (event is VideoRecordEvent.Finalize && event.hasError()) {
-                    Log.w(TAG, "recording $id finalized with error ${event.error}", event.cause)
+                if (event is VideoRecordEvent.Finalize) {
+                    if (event.hasError()) {
+                        Log.w(TAG, "recording $id finalized with error ${event.error}", event.cause)
+                    } else {
+                        onSaved?.invoke(SavedAcquisition(id, mp4, File(dir, "acq_$id.json")))
+                    }
                 }
             }
     }

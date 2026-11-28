@@ -19,9 +19,13 @@ import net.belllap.audio.source.PcmAudioSource
 import net.belllap.audio.source.PcmChunk
 import net.belllap.core.model.AcquisitionSink
 import net.belllap.core.model.CaptureSettings
+import net.belllap.core.model.CrossingSource
+import net.belllap.core.model.FinishLine
 import net.belllap.core.model.FlagInterval
+import net.belllap.core.model.NormPoint
 import net.belllap.core.model.RecordingUnavailableException
 import net.belllap.core.model.Sidecar
+import net.belllap.core.model.SidecarCrossing
 import net.belllap.core.model.SidecarDevice
 import net.belllap.core.model.VolumeKey
 import net.belllap.core.model.VolumeKeyAction
@@ -30,6 +34,8 @@ import net.belllap.core.statemachine.Event
 import net.belllap.core.statemachine.FakeBeepSink
 import net.belllap.core.statemachine.State
 import net.belllap.testing.fixtures.Fixtures
+import net.belllap.testing.fixtures.SceneRenderer
+import net.belllap.testing.fixtures.SceneSpec
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -368,7 +374,57 @@ class SessionControllerTest {
         assertTrue(sink.sidecars.isEmpty())
     }
 
+    /** The synthetic scene's finish line: vertical at the line column, from the road top to the frame bottom. */
+    private val sceneLine = SceneRenderer.LINE_X.toFloat().div(SceneSpec.WIDTH).let { x ->
+        FinishLine(NormPoint(x, SceneRenderer.ROAD_TOP.toFloat() / SceneSpec.HEIGHT), NormPoint(x, 1f))
+    }
+
+    private val riders = Fixtures.crossings()
+
+    private fun crossingBeeps() = beeps.played.count { it == Cue.CROSSING_BEEP }
+
+    private fun sceneSettings() = CaptureSettings(bellAutomation = false, finishLine = sceneLine)
+
+    @Test
+    fun crossingsAreNotBeepedOrRecordedOutsideAcquisition() = runTest {
+        val c = armed()
+        c.updateSettings(sceneSettings())
+        riders.frames!!.forEach(c::onFrame)
+        assertEquals(0, crossingBeeps())
+        c.recordNow()
+        c.stop()
+        assertEquals(emptyList<SidecarCrossing>(), sink.sidecars.single().crossings)
+    }
+
+    @Test
+    fun aCrossingInAcquisitionBeepsAndIsWrittenToTheSidecarWithItsFrameIndex() = runTest {
+        val c = armed()
+        c.updateSettings(sceneSettings())
+        val frames = riders.frames!!
+        val start = 25 // the camera has been running since Arming; recording starts at frame 25
+        frames.take(start).forEach(c::onFrame)
+        sink.pts = frames[start].ptsNs / NS_PER_US
+        c.recordNow()
+        frames.drop(start).forEach(c::onFrame)
+        c.stop()
+        val labels = riders.labels.crossings
+        assertEquals(labels.size, crossingBeeps())
+        val saved = sink.sidecars.single().crossings
+        assertEquals(labels.map { it.frame - start }, saved.map { it.frameIndex })
+        assertTrue(saved.all { it.source == CrossingSource.LIVE && it.confidence > 0f })
+        assertEquals(frames[labels.first().frame].ptsNs / NS_PER_US, saved.first().ptsUs)
+    }
+
+    @Test
+    fun withoutAFinishLineNothingIsDetected() = runTest {
+        val c = armed()
+        c.recordNow()
+        riders.frames!!.forEach(c::onFrame)
+        assertEquals(0, crossingBeeps())
+    }
+
     private companion object {
+        const val NS_PER_US = 1000L
         const val FLAG_ABSENT_MS = 15_000L
         const val ARM_DELAY_MS = 10_000L
     }

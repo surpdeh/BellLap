@@ -18,6 +18,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -234,6 +235,11 @@ class MainActivity : ComponentActivity() {
     private fun HiddenCamera(settings: CaptureSettings) {
         val context = LocalContext.current
         val owner = LocalLifecycleOwner.current
+        val session = (application as BellLapApp).session
+        DisposableEffect(session) {
+            PreviewSession.frameListener = session::onFrame
+            onDispose { PreviewSession.frameListener = null }
+        }
         LaunchedEffect(settings.facing, settings.resolution, settings.fps) {
             try {
                 PreviewSession.bind(context, owner, settings) { PreviewSession.discardSurface(context, it) }
