@@ -19,3 +19,6 @@ testing/fixtures/real/
 # Claude local settings
 .claude/settings.local.json
 .kotlin/
+# Bug-report Worker (F23)
+backend/worker/node_modules/
+.wrangler/

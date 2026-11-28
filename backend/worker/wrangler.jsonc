@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "belllap-bugreport",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "observability": { "enabled": true },
+  "r2_buckets": [{ "binding": "REPORTS", "bucket_name": "belllap-reports" }],
+  "ratelimits": [
+    { "name": "INSTALL_LIMITER", "namespace_id": "2301", "simple": { "limit": 3, "period": 60 } },
+    { "name": "IP_LIMITER", "namespace_id": "2302", "simple": { "limit": 20, "period": 60 } }
+  ],
+  "vars": {
+    "GITHUB_OWNER": "surpdeh",
+    "GITHUB_REPO": "belllap",
+    "R2_BUCKET_NAME": "belllap-reports",
+    "CF_ACCOUNT_ID": "8e33116347c6438304959552670c559c",
+    // Filled in once the Firebase project exists (see backend/README.md). Empty means the Worker answers 503.
+    "FIREBASE_PROJECT_NUMBER": "611005785266",
+    "FIREBASE_APP_ID": "1:611005785266:android:e0c5e11a28e61091ee15ab"
+  }
+  // Secrets (wrangler secret put): GITHUB_APP_ID, GITHUB_INSTALLATION_ID, GITHUB_APP_PRIVATE_KEY,
+  // R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY.
+}

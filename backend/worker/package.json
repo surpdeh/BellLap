@@ -1,0 +1,27 @@
+{
+  "name": "belllap-bugreport-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p scripts",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "aws4fetch": "^1.0.20",
+    "jose": "^6.2.18",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "~0.23.0",
+    "@cloudflare/workers-types": "^5.20261128.1",
+    "@types/node": "^22.20.7",
+    "typescript": "~7.0.2",
+    "vitest": "~4.1.12",
+    "wrangler": "^4.169.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
